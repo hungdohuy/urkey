@@ -17,6 +17,7 @@ The owner updates this section when the phase changes.
 
 | Document | Purpose |
 |----------|---------|
+| `PROGRESS.md` | **Read first.** Current state, next steps, items waiting on the owner, V1 requirement status, session log. |
 | `docs/requirements/product-brief.md` | Original brief (do not edit). |
 | `docs/requirements/v1.md` | Numbered requirements (R-*), adjustments to the brief, acceptance criteria. Wins over the brief. |
 | `docs/architecture/overview.md` | Components, key hierarchy, flows, decisions (D-*). |
@@ -40,6 +41,8 @@ where it helps traceability.
 6. Review your own diff for security issues and unnecessary changes.
 7. Update docs when behavior or architecture changes; write an ADR for significant decisions.
 8. Report what changed, what was tested, and what is still incomplete.
+9. Before ending a session, update `PROGRESS.md`: snapshot, "Resume here", owner items,
+   requirement statuses that changed, and one session-log line. Commit it with the work.
 
 If a requirement is ambiguous, state the ambiguity and propose a default.
 If a security decision is uncertain, stop and explain the risk instead of guessing.
