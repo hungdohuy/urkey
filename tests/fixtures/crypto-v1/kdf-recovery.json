@@ -1,0 +1,19 @@
+{
+  "_note": "TEST-ONLY values for urkey crypto design v1. Never use these keys, passwords or ids for real data.",
+  "cases": [
+    {
+      "account_id": "11111111111111111111111111111111",
+      "kek_recovery": "2803b2e92437b7326cacda20606898fd80a8ba4ecbfd1912069e17ad4bb0860f",
+      "recovery_auth_public_key": "307352281c34f7972374196b470d91e6a7add5ae9976cad487d189b79cde4c81",
+      "recovery_key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "recovery_root_R": "ad2ed43492e44944dbcf9a1ca6d5f96d3728212a0e91f2a372025fa2dfbdaf87"
+    },
+    {
+      "account_id": "11111111111111111111111111111111",
+      "kek_recovery": "a36958980fc1ab9375b71adb5120c4296aa366d94a518a782b0d639196e77821",
+      "recovery_auth_public_key": "ca28170eda7f13e76de6b95a2e27ec47fac6b915b50fb4a9840244a3dd4703fb",
+      "recovery_key": "909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+      "recovery_root_R": "6c7f6eb39560840c65ba177ec84c7cfee0157d1bb3f5df71556bc9e9618335a1"
+    }
+  ]
+}

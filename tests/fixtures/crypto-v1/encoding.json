@@ -1,0 +1,70 @@
+{
+  "_note": "TEST-ONLY values for urkey crypto design v1. Never use these keys, passwords or ids for real data.",
+  "account_secret_keys": [
+    {
+      "bytes": "000102030405060708090a0b0c0d0e0f",
+      "text": "UK1-000G40-R40M3-0E209-185GR-38E1W6"
+    },
+    {
+      "bytes": "ffffffffffffffffffffffffffffffff",
+      "text": "UK1-ZZZZZZ-ZZZZZ-ZZZZZ-ZZZZZ-ZZZZW*"
+    },
+    {
+      "bytes": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+      "text": "UK1-M2GT58-X4MPK-AFA59-NANTS-BDENWN"
+    }
+  ],
+  "invalid_inputs": [
+    {
+      "input": "UK1-00ZG40-R40M3-0E209-185GR-38E1W6",
+      "reason": "check symbol mismatch",
+      "type": "account_secret_key"
+    },
+    {
+      "input": "UK1-000G40-R40M3-0E209-185GR-38E1W",
+      "reason": "too short",
+      "type": "account_secret_key"
+    },
+    {
+      "input": "UK1-000G40-R40M3-0E209-185GR-38E1W60",
+      "reason": "too long",
+      "type": "account_secret_key"
+    },
+    {
+      "input": "UKR1-000G40-R40M3-0E209-185GR-38E1W6",
+      "reason": "wrong prefix",
+      "type": "account_secret_key"
+    },
+    {
+      "input": "UK1-UUUUUU-UUUUU-UUUUU-UUUUU-UUUUU0",
+      "reason": "U is check-only",
+      "type": "account_secret_key"
+    },
+    {
+      "input": "UK1-000000-00000-00000-00000-000010",
+      "reason": "non-zero padding bits",
+      "type": "account_secret_key"
+    }
+  ],
+  "recovery_keys": [
+    {
+      "bytes": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "text": "UKR1-000G-40R4-0M30-E209-185G-R38E-1W81-24GK-2GAH-C5RR-34D1-P70X-3RFG2"
+    },
+    {
+      "bytes": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "text": "UKR1-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZGF"
+    },
+    {
+      "bytes": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f",
+      "text": "UKR1-G20R-50W4-GP38-F249-HA5R-S3CE-HY89-34MK-JJAS-D5WR-K6D9-Q74X-KTFG3"
+    }
+  ],
+  "valid_alternate_inputs": [
+    {
+      "bytes": "000102030405060708090a0b0c0d0e0f",
+      "input": "ukl ooog4o r4om3 oe2o9 l85gr 38elw6",
+      "type": "account_secret_key"
+    }
+  ]
+}

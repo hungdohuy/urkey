@@ -1,0 +1,82 @@
+{
+  "_comment": "Cases with m_kib below 32768 use deliberately weak parameters that real clients reject (spec §4.2).",
+  "_note": "TEST-ONLY values for urkey crypto design v1. Never use these keys, passwords or ids for real data.",
+  "cases": [
+    {
+      "account_id": "11111111111111111111111111111111",
+      "account_secret_key": "0102030405060708090a0b0c0d0e0f10",
+      "argon2id_output_P": "3c69d3a653828f7a9fd15c60f840d7fa12b0b1653a35cecaaef707ee0a9b86f2",
+      "auth_public_key": "de86a3ab3d2732d6ef42d6485ad58b5e7a7f16ace24939764ea06cdb981ed9a4",
+      "kdf_params": {
+        "encoded": "01000001000000000100000001",
+        "m_kib": 256,
+        "p": 1,
+        "t": 1
+      },
+      "kdf_salt": "66666666666666666666666666666666",
+      "kek_unlock": "8915acd0e220ce1a22f8e5a01c0bf18ef25ce02be3c93154a41763bc604d2e5d",
+      "name": "ascii, low params",
+      "password_utf8": "75726b6579207465737420766563746f722070617373776f7264",
+      "unlock_root_U": "d715a37fca8abb12372b6a12ddbfd35043161e0a0cad5b9970b00a7b8081ed3f"
+    },
+    {
+      "account_id": "11111111111111111111111111111111",
+      "account_secret_key": "0102030405060708090a0b0c0d0e0f10",
+      "argon2id_output_P": "0a31b399bddd0b637f46fda66bb16268d7f0b2b26787b15ee6985abe3bb22844",
+      "auth_public_key": "db2d6be6560ebe7179aeaf289c56775abc8ea53a905d434a96704bfdba29b26e",
+      "kdf_params": {
+        "encoded": "01000001000000000100000001",
+        "m_kib": 256,
+        "p": 1,
+        "t": 1
+      },
+      "kdf_salt": "66666666666666666666666666666666",
+      "kek_unlock": "60ca84a2896b66c59781dca768ccc4bd6d280f1d45f06ee0eb31a8ed97b128b7",
+      "name": "nfkc: U+FB01 ligature equals 'fi', low params",
+      "password_utf8": "efac81",
+      "unlock_root_U": "92d957aa6dbb4f8198caf3cc1d545f33103df1d09d714f5c756c7d48449684ed"
+    },
+    {
+      "account_id": "11111111111111111111111111111111",
+      "account_secret_key": "707172737475767778797a7b7c7d7e7f",
+      "argon2id_output_P": "6af49e5ed1153164c7db423dbc1e17684e216a81f593ac80e8dc25bee9f60620",
+      "auth_public_key": "d8d12f6e9a05077b2360f79bfcede5ae690f92f56886185019e21ab7e33e8aa3",
+      "kdf_params": {
+        "encoded": "01000002000000000200000002",
+        "m_kib": 512,
+        "p": 2,
+        "t": 2
+      },
+      "kdf_salt": "66666666666666666666666666666666",
+      "kek_unlock": "4d09193393bd198d3b9fadc803a7372efd8cdd1d191a1b4615ddc1796a7411ea",
+      "name": "unicode, low params",
+      "password_utf8": "6de1baad74206b68e1baa97520f09f9491",
+      "unlock_root_U": "d8b7c70b71c2101f32df1a286d263c02646831c3708ad809ccff8aef54e0d2ef"
+    },
+    {
+      "account_id": "11111111111111111111111111111111",
+      "account_secret_key": "0102030405060708090a0b0c0d0e0f10",
+      "argon2id_output_P": "7c376ed00e188b814d7163c7185e4f55582ce05977999e751ce1ab91cdcc28c6",
+      "auth_public_key": "0cc70e9d58f95d87f5244316e2b2e80ea0b0ac136079988b5d050bd76709db99",
+      "kdf_params": {
+        "encoded": "01000100000000000300000001",
+        "m_kib": 65536,
+        "p": 1,
+        "t": 3
+      },
+      "kdf_salt": "66666666666666666666666666666666",
+      "kek_unlock": "d87b493a1d13a3bf15aad893ca326d5d3e2669a70cb6ad67f0e0297cd08f86fd",
+      "name": "ascii, default params",
+      "password_utf8": "75726b6579207465737420766563746f722070617373776f7264",
+      "unlock_root_U": "ba6ae51731f2844675ee3f4ce78220e87277788dc9bee2c417e5e11558bd6146"
+    }
+  ],
+  "rejected_kdf_params": [
+    "0100007fff0000000300000001",
+    "01000100000000000100000001",
+    "01001000010000000300000001",
+    "01000100000000001500000001",
+    "01000100000000000300000000",
+    "02000100000000000300000001"
+  ]
+}
