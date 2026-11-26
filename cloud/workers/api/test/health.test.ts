@@ -1,7 +1,7 @@
 import { exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
-const BASE = "https://api.example.test";
+const BASE = "http://localhost:8787";
 
 describe("GET /v1/health", () => {
   it("returns ok with the API version", async () => {

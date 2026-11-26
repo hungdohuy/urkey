@@ -39,6 +39,20 @@ export default tseslint.config(
     },
   },
   {
+    // Tests parse JSON responses dynamically; keep src strict, relax only unsafe-any in tests.
+    files: ["**/test/**/*.ts", "**/*.test.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+    },
+  },
+  {
     files: ["**/*.config.{js,ts}", "eslint.config.js"],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: { globals: globals.node },

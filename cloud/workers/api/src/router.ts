@@ -1,11 +1,10 @@
 /**
- * Minimal hand-written router (D-9, ADR 0010). Routes are matched on method and exact
- * path; path parameters are added when the API needs them (roadmap P3).
+ * Minimal hand-written router (D-9, ADR 0010): exact method + path matching.
  */
 import type { Env } from "./env";
 import { error } from "./http";
 
-export type Handler = (request: Request, env: Env) => Promise<Response> | Response;
+export type Handler = (request: Request, env: Env, now: number) => Promise<Response> | Response;
 
 export class Router {
   readonly #routes = new Map<string, Map<string, Handler>>();
@@ -20,7 +19,12 @@ export class Router {
     return this;
   }
 
-  async handle(request: Request, env: Env): Promise<Response> {
+  /** Methods registered for a path (for CORS preflight and 405). */
+  methods(pathname: string): string[] {
+    return [...(this.#routes.get(pathname)?.keys() ?? [])];
+  }
+
+  async handle(request: Request, env: Env, now: number): Promise<Response> {
     const { pathname } = new URL(request.url);
     const byMethod = this.#routes.get(pathname);
     if (byMethod === undefined) {
@@ -32,6 +36,6 @@ export class Router {
       response.headers.set("allow", [...byMethod.keys()].join(", "));
       return response;
     }
-    return handler(request, env);
+    return handler(request, env, now);
   }
 }
