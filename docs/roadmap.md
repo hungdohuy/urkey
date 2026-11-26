@@ -86,6 +86,12 @@ design system and all vault screens; local-only account (stored in IndexedDB) fo
 - Canary test: known secrets never appear in console output, DOM attributes, URLs or titles (R-SEC-1).
 - UX acceptance in `ux/screens.md` §8 (axe, layouts, keyboard run-through).
 
+
+**Status (2026-11-26): implemented, gate open.** All vault screens, TOTP, the generator and the
+WASM core in a Web Worker. Tests: 29 component tests, Playwright including storage inspection
+and axe; the generator χ² test runs on 10⁶ samples. Open: the full canary test (R-SEC-1), and
+the owner checking layouts on a real phone and tablet.
+
 ## P3 — Server, authentication and devices
 
 **Deliverables:** Worker API (prelogin, challenge, create, login, refresh, step-up, account,
@@ -99,6 +105,11 @@ sign-in flows; Emergency Kit.
 - Revoked device: next request → 401; refresh fails.
 - Worker verifies the signatures in `signatures.json` fixtures.
 
+
+**Status (2026-11-26): implemented, gate open.** Worker API with 31 tests in the Workers runtime,
+D1 migrations, rate limits, scheduled cleanup, web and CLI sign-in, Emergency Kit. Open: the
+timing measurement for unknown-email prelogin (± 20 ms) against a deployed Worker.
+
 ## P4 — Sync
 
 **Deliverables:** `sync-core` (outbox, pull/push, conflicts, integrity checks, resync), Worker
@@ -111,6 +122,11 @@ sync endpoints with idempotency, web integration, Needs-attention UI.
   the Durable Object fallback is implemented and an ADR records it.
 - Integrity tests: swapped, rolled-back and forged records are quarantined (T-4, T-6, T-9).
 - Two-browser Playwright test: offline edits on both, reconnect, resolve conflict.
+
+
+**Status (2026-11-26): implemented, gate open.** `sync-core` with a simulation of 10,000 random
+scenarios, Worker idempotency and guarded batches (D-15), Needs-attention UI, two-device browser
+test. Open: a dedicated parallel-push stress test on a deployed D1 (`cf dev` serializes requests).
 
 ## P5 — Recovery and key rotation
 
@@ -126,6 +142,12 @@ rotation, VMK rotation, device-removal-then-rotate flow, security events and not
   (fault-injection test killing the request mid-way).
 - Other devices handle each event as in sync.md §8.2.
 
+
+**Status (2026-11-26): implemented, gate open.** Recovery, password, Secret Key, Recovery Key and
+vault key changes, in the web app and the API, with browser tests for the password change, vault key
+rotation and recovery that revokes the old device. Open: the fault-injection test that interrupts
+a Recovery Key replacement mid-request.
+
 ## P6 — CLI and SSH agent (macOS)
 
 **Deliverables:** `urk` CLI (R-SSH-4 commands), SQLite cache, Keychain storage, `ssh-agent`
@@ -138,6 +160,12 @@ daemon with launchd plist and setup command, CLI sync.
 - After `urk lock` / idle timeout, `ssh-add -l` lists no identities and signing fails.
 - Socket permissions 0600 in a 0700 directory; peer-uid check rejects another user (T-18).
 - CLI and web interoperate on the same account (create on web, sign on CLI, and vice versa).
+
+
+**Status (2026-11-26): implemented on Linux, macOS build in CI; gate open.** `urk` CLI, SQLite
+cache, the agent with OpenSSH tests (ADR 0016), and `tests/integration/cli_e2e.sh` (real sshd;
+web ↔ CLI interop in Playwright). Open, owner only: Keychain and launchd tests on a real Mac
+(O-6/O-7), and `git` over SSH on macOS.
 
 ## P7 — Hardening and release
 
@@ -153,6 +181,16 @@ point), threat-model and docs refresh, external review.
 - Restore from an encrypted export into a fresh account works.
 - **M1 — controlled personal testing:** deployed, used daily with **test data only** for two weeks
   on two devices plus the CLI, with no data loss.
+
+
+**Status (2026-11-26): engineering done, release steps waiting on the owner.**
+- Done: CSP + Trusted Types with a violation test, separate app and API Workers, a reproducible
+  release hash (checked in CI), the About screen, service-worker pinning with an approval
+  banner, encrypted export and restore into a fresh account (ADR 0017; CLI and web e2e), CI e2e
+  and macOS jobs, `cf deploy --dry-run` for both Workers, the deployment runbook
+  (`docs/operations/deploy.md`), and the threat-model refresh (§9a).
+- Waiting on the owner: R2 snapshots (Q-5/O-5), deployment (O-8: domain, token, D1, secret),
+  the security review (O-9), and M1.
 
 ## M2 — Real credentials
 

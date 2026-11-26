@@ -117,6 +117,8 @@ Status: **M** = mitigated by design, **P** = partly mitigated, **A** = accepted 
 | T-24 | Bugs in our composition (wrong AAD, label reuse, nonce reuse) | — | Spec review gate, test vectors with an independent implementation, fuzzing, no `unsafe` in core | P (needs review) |
 | T-25 | XSS in the web app reads unlocked secrets | AD-4-like | React escaping, no `dangerouslySetInnerHTML` with item data, strict CSP, Trusted Types where supported; item URLs rendered as text and opened with `noopener` | P |
 | T-26 | Cross-site requests against the API | AD-9 | Bearer tokens (no cookies), CORS allows only the app origin | M |
+| T-27 | Stolen encrypted export file | AD-2-like | The file holds only what D1 already stores (unlock envelope + records, ADR 0017); opening it needs the password **and** ASK of the time it was made | M |
+| T-28 | Records silently removed from an export file | AD-2-like | Changed, swapped or replayed records fail authentication; whole-record removal is not detected (same as deleting the file) | A |
 
 ## 7. Metadata visible to the server (AS-7)
 
@@ -154,6 +156,24 @@ These must always hold; each has (or will have) a test.
 - Traffic analysis beyond §7.
 - Features outside v1 scope (sharing, browser autofill, iOS).
 
+## 9a. Implementation status (2026-11-26, before the independent review)
+
+- **T-3 / T-25:** the app is served by its own assets-only Worker. Its `_headers` file sets
+  `default-src 'none'`, `script-src 'self' 'wasm-unsafe-eval'`, `style-src 'self'`, a
+  `connect-src` limited to the API origin, `frame-ancestors 'none'`, and
+  `require-trusted-types-for 'script'` with a single `urkey` policy. Playwright runs the
+  production build and fails on any CSP or Trusted Types violation. Radix's scroll lock injected
+  `<style>` elements, so it was replaced by a CSSOM-only shim instead of weakening `style-src`.
+- **T-3:** the release hash (SHA-256 over the served files) is reproducible, which CI checks.
+  It is shown in Settings › About and published in `release.json`. The service worker pins the
+  cached release; a new release waits for the user's approval in a banner. The hash is only
+  compared when the user does it: nothing checks it against an independent source yet.
+- **T-20:** the tests check that storage (IndexedDB, the export file) contains no plaintext,
+  and that error messages are fixed strings. A full canary test over console output, DOM
+  attributes and URLs is part of the review checklist.
+- **T-21:** the CLI prints a field only on request (`--field`), and has no clipboard
+  integration yet (R-ITEM-7 is a *should*, open).
+
 ## 10. Residual risks for the owner to accept
 
 1. **T-3** — the web app is only as trustworthy as its delivery path.
@@ -161,6 +181,7 @@ These must always hold; each has (or will have) a test.
 3. **T-9** — the server can hide recent changes from a device that never saw them.
 4. **T-14** — data already on a revoked device stays exposed.
 5. **T-11 / T-22** — a stolen device's protection rests on the master password.
+6. **T-28** — an export file can lose whole records without detection.
 
 ## 11. Review triggers
 

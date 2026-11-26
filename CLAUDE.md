@@ -96,8 +96,8 @@ Dependency direction: `crypto-core` ← `vault-core` ← `sync-core` ← {`wasm-
 - Rust stable (pinned in `rust-toolchain.toml`) with `wasm32-unknown-unknown`, rustfmt, clippy.
 - `wasm-bindgen` crate pinned to `=0.2.130` to match the installed `wasm-bindgen-cli 0.2.130`;
   bump both together.
-- `wasm-pack 0.15.1`. `wasm-opt` comes from the system `binaryen` package (GitHub release
-  downloads are blocked in the cloud environment).
+- `wasm-pack 0.15.1`. `wasm-opt` is **disabled** for `wasm-bindings` (Cargo.toml metadata):
+  binaryen 108 breaks the reference-type tables of wasm-bindgen 0.2.130 in browsers.
 - Node 22, pnpm (workspace).
 - Cloudflare tooling is the **`cf` CLI** (`cf@1.0.0-rc.6`, a project dev dependency of
   `cloud/workers/api`) with the Vite bundler (`@cloudflare/vite-plugin` 2.0). **Do not use or
@@ -139,6 +139,12 @@ pnpm --filter api dev            # cf dev on :8787, local D1; GET /v1/health
 pnpm --filter api build          # cf build
 pnpm --filter api migrate:local  # cf d1 migrations apply <local id> --local
 cargo run -p urkey-cli -- --version   # the `urk` binary
+
+# End to end (need OpenSSH client + server; Playwright uses the preinstalled Chromium)
+tests/integration/cli_e2e.sh                 # cf dev + two urk devices + agent + sshd + export/restore
+pnpm --filter web e2e                        # Playwright: dev server + production build (CSP, SW, offline)
+# Each run creates accounts; account creation is rate-limited (10/hour/IP), so with a reused
+# local API restart it (`pnpm --filter api e2e:server` wipes local state) between many runs.
 ```
 
 Never run `cf deploy` (other than `cf deploy --dry-run`), `cf auth login`, or remote D1/R2

@@ -10,145 +10,156 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | | |
 |--|--|
 | Last updated | 2026-11-26 |
-| Current phase | **P1 — Crypto core**: implementation done, gate open (see below) |
+| Current phase | **P2–P7 engineering complete.** Every phase gate still needs owner-only steps (below). |
 | Branch | `claude/youthful-archimedes-v6dhz1` (no PR yet) |
-| Last commit with green CI | `5bd3e84` — [CI run 4](https://github.com/hungdohuy/urkey/actions/runs/45844937330), all 5 jobs passed |
-| V1 requirements | 3 of 48 done, 6 partly done (see [V1 requirements](#v1-requirements)) |
+| CI | 7 jobs: rust, deny, interop, wasm, web, e2e, macos. Latest result: see the session log. |
+| V1 requirements | 42 of 48 done, 4 partly done, 2 open (R-ITEM-7, a *should*; R-SSH-5, planned for V1.1) |
+| Data | **Test data only** until M2. Nothing is deployed. |
 
 ## Resume here (next steps, in order)
 
-Owner directive (2026-11-26): complete all remaining phases P2–P7. Status of that work:
-
-1. ✅ `vault-core` (items, TOTP, generator, SSH keys, records, account ops) — P2/P5 core.
-2. ✅ `sync-core` (sans-IO engine, 10,000-scenario simulation) — P4 core.
-3. ✅ Worker API (`docs/architecture/api.md`, 31 tests in the Workers runtime) — P3/P4/P5 server.
-4. ✅ SSH agent (OpenSSH interop tests) and `urk` CLI with `tests/integration/cli_e2e.sh` — P6.
-5. 🟡 **Next:** `wasm-bindings` (handle-based API in a Web Worker) + web app screens (P2–P5 UI),
-   then Playwright end-to-end tests against `cf dev`.
-6. ⬜ P7 hardening: app hosting with CSP, service-worker pinning, reproducible build check,
-   encrypted export, CI jobs for e2e and macOS, docs refresh.
+1. **Owner:** review and decide the items in [Waiting on the owner](#waiting-on-the-owner),
+   starting with O-10 (ADR 0017) and O-1/O-2, then the code review (O-3).
+2. **Owner:** deployment (O-8) following `docs/operations/deploy.md`, then M1 (two weeks with
+   test data on two devices plus the CLI).
+3. **Engineering, optional before the review:**
+   - a full canary test over console output, DOM attributes, URLs and titles (R-SEC-1);
+   - a fault-injection test for Recovery Key replacement (P5);
+   - a parallel-push stress test against deployed D1 (P4);
+   - CLI clipboard copy with clearing after 90 s (R-ITEM-7);
+   - R2 snapshots, once Q-5 is decided (O-5).
+4. On each session: run the commands in `CLAUDE.md` and keep this file current.
 
 ## Waiting on the owner
 
 | # | What | Why it matters | Where |
 |---|------|----------------|-------|
-| O-1 | Approve the Recovery Key display grouping (`…-XXXXC`, check character at the end of the last group) | Spec said "groups of 4", which 53 characters can't be; display only | crypto spec §3.2, §15 |
-| O-2 | Accept a redacting `Debug` on secret types (roadmap P1 says "no `Debug`"; `CLAUDE.md` allows redacting) | Decide which wording is binding | roadmap P1, `crates/crypto-core/src/secret.rs` |
-| O-3 | Review the P1 code | P1 gate | roadmap P1 |
+| O-1 | Approve the Recovery Key display grouping (`…-XXXXC`) | Spec said "groups of 4"; display only | crypto spec §3.2, §15 |
+| O-2 | Accept a redacting `Debug` on secret types (roadmap P1 says "no `Debug`") | Decide which wording is binding | roadmap P1, `crypto-core/src/secret.rs` |
+| O-3 | Review the code (P1 crypto core first, then vault/sync/API/clients) | Every phase gate | roadmap |
 | O-4 | Measure unlock time on an iPhone PWA | Confirms Argon2id defaults (D-10) | crypto spec §4.2 |
-| O-5 | Decide snapshot DEK wrapping (Q-5) | Needed before P7 backups | crypto spec §14 |
-| O-6 | Install Xcode Command Line Tools on the Mac (`xcode-select --install`) | Needed before P6 | — |
-| O-7 | Turn on Remote Control on the Mac (or run Claude Code locally there) | macOS testing in P6 | — |
-| O-8 | Create a Cloudflare API token (Workers, D1, R2 edit) | Needed for deployment in P7 | — |
-| O-9 | Arrange the independent security review | Required before real credentials (M2) | crypto spec §13 |
+| O-5 | Decide snapshot DEK wrapping (Q-5) | Blocks R2 snapshots only; export does not need it (ADR 0017) | crypto spec §14 |
+| O-6 | Test the CLI on a real Mac: Keychain prompts, `urk agent install` (launchd), `ssh`/`git` through the agent | P6 gate; CI only builds and unit-tests on macOS | `crates/cli`, `crates/ssh-agent` |
+| O-7 | Turn on Remote Control on the Mac (or run Claude Code there) if you want help with O-6 | macOS testing | — |
+| O-8 | Deploy: domain, origins, Cloudflare token, D1, `PRELOGIN_SECRET` | P7 / M1 | `docs/operations/deploy.md` |
+| O-9 | Arrange the independent security review | Required before real credentials (M2) | crypto spec §13, threat model §6/§9a |
+| O-10 | Approve ADR 0017 (encrypted export = the account's own ciphertext, no new construction) | Spec change, crypto-adjacent | `docs/decisions/0017-…`, crypto spec §15 |
+| O-11 | Update the phase section in `CLAUDE.md` (it still says P2–P7) | You own that section | `CLAUDE.md` |
+| O-12 | Check layouts on a real phone and tablet (Playwright covers desktop Chrome) | R-UX-1 | `docs/ux/screens.md` §8 |
 
 ## Phases
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| P0 Foundation | ✅ | Docs, ADRs 0001–0015, scaffolding, CI green |
-| P1 Crypto core | 🟡 | Code, vectors (native, WASM, Python 102/102), fuzz targets, benchmarks done. Open: O-1…O-4, first nightly fuzz run |
-| P2 Local vault + web UI | ⬜ | `vault-core`, `wasm-bindings` (Web Worker), all vault screens, TOTP, generator |
-| P3 Server, auth, devices | ⬜ | Worker endpoints, D1 schema, sign-in, Emergency Kit, device list |
-| P4 Sync | ⬜ | `sync-core`, outbox, conflicts, simulation tests, D-15 concurrency proof |
-| P5 Recovery + rotation | ⬜ | Recovery flow, password / Secret Key / Recovery Key / vault key changes |
-| P6 CLI + SSH agent (macOS) | ⬜ | `urk` commands, SQLite cache, Keychain, launchd agent; needs O-6, O-7 |
-| P7 Hardening + release | ⬜ | CSP, reproducible builds, SW pinning, export/snapshots, deploy with `cf`; needs O-8 |
-| M1 Personal testing | ⬜ | 2 weeks daily use with **test data only** |
-| M2 Real credentials | ⬜ | After P7, closed review findings (O-9) and owner approval |
+| P0 Foundation | ✅ | Docs, ADRs, scaffolding, CI |
+| P1 Crypto core | 🟡 | Done; gate needs O-1…O-4 |
+| P2 Local vault + web UI | 🟡 | Implemented and tested; gate needs O-3, O-12, the canary test |
+| P3 Server, auth, devices | 🟡 | Implemented; prelogin timing to measure on a deployed Worker |
+| P4 Sync | 🟡 | Implemented, 10,000-scenario simulation; D1 parallel-push stress test after deploy |
+| P5 Recovery + rotation | 🟡 | Implemented; fault-injection test open |
+| P6 CLI + SSH agent (macOS) | 🟡 | Implemented, real-sshd e2e on Linux, macOS CI build; real-Mac test is O-6 |
+| P7 Hardening + release | 🟡 | CSP/TT, SW pinning, reproducible hash, export/restore, CI, runbook done; R2 snapshots (O-5), deploy (O-8), review (O-9) |
+| M1 Personal testing | ⏸ | After O-8 |
+| M2 Real credentials | ⏸ | After P7, closed review findings (O-9) and owner approval |
 
 ## V1 requirements
 
-From `docs/requirements/v1.md`. "Phase" is where the work is planned.
+From `docs/requirements/v1.md`. Evidence is the main test that covers each requirement.
 
 ### Account and recovery
-| ID | Requirement | Phase | Status |
-|----|-------------|-------|--------|
-| R-ACC-1 | Create account locally (keys generated on device) | P3 | ⬜ (crypto building blocks ✅ in P1) |
-| R-ACC-2 | Emergency Kit with confirmation | P3 | ⬜ |
-| R-ACC-3 | Unlock with password; Secret Key from device storage | P2 | ⬜ |
-| R-ACC-4 | Offline unlock | P2 | ⬜ |
-| R-ACC-5 | Auto-lock + manual lock, keys zeroized | P2 | ⬜ |
-| R-ACC-6 | Password change re-wraps VMK only | P5 | ⬜ |
-| R-ACC-7 | Secret Key rotation | P5 | ⬜ |
-| R-REC-1 | Recover with Recovery Key only | P5 | ⬜ |
-| R-REC-2 | Recovery forces new password, Secret Key, Recovery Key | P5 | ⬜ |
-| R-REC-3 | Recovery Key rotation, atomic | P5 | ⬜ |
-| R-REC-4 | Clear guidance on each secret | P2/P3 | ⬜ (written in `docs/security/recovery.md`) |
+| ID | Requirement | Status | Evidence |
+|----|-------------|--------|----------|
+| R-ACC-1 | Create account locally | ✅ | `vault-core` account tests; Playwright "create an account"; `cli_e2e.sh` |
+| R-ACC-2 | Emergency Kit with confirmation | ✅ | Onboarding kit step (last 4 characters), Playwright |
+| R-ACC-3 | Unlock with password; Secret Key from device storage | ✅ | WebCrypto-wrapped ASK (kind 0x06); Keychain/file store in CLI |
+| R-ACC-4 | Offline unlock | ✅ | Playwright production project: offline reload + unlock |
+| R-ACC-5 | Auto-lock + manual lock, keys zeroized | ✅ | `Core::lock`, idle timer, Shift+L; Playwright lock test |
+| R-ACC-6 | Password change re-wraps VMK only | ✅ | account tests (containers unchanged); Playwright |
+| R-ACC-7 | Secret Key rotation | ✅ | account tests; Settings › Security |
+| R-REC-1 | Recover with Recovery Key only | ✅ | Playwright recovery test |
+| R-REC-2 | Recovery forces new password, Secret Key, Recovery Key | ✅ | `setup_after_recovery`; Playwright |
+| R-REC-3 | Recovery Key rotation, atomic | 🟡 | D1 guarded batch; fault-injection test open |
+| R-REC-4 | Clear guidance on each secret | ✅ | UX copy per `docs/security/recovery.md` |
 
 ### Authentication and devices
-| ID | Requirement | Phase | Status |
-|----|-------------|-------|--------|
-| R-AUTH-1 | Login by signing a challenge with derived auth key | P3 | ⬜ (key derivation + message format ✅ in P1) |
-| R-AUTH-2 | Recovery login with recovery auth key | P5 | ⬜ (derivation ✅ in P1) |
-| R-AUTH-3 | Per-device keys, device-bound sessions | P3 | ⬜ |
-| R-DEV-1 | Device register / list / revoke | P3 | ⬜ |
-| R-DEV-2 | New-device notice on other devices | P3/P4 | ⬜ |
-| R-DEV-3 | VMK rotation | P5 | ⬜ |
+| ID | Requirement | Status | Evidence |
+|----|-------------|--------|----------|
+| R-AUTH-1 | Login by signing a challenge | ✅ | Worker tests; CLI + web sign-in |
+| R-AUTH-2 | Recovery login with recovery auth key | ✅ | Worker tests; Playwright recovery |
+| R-AUTH-3 | Per-device keys, device-bound sessions | ✅ | Non-extractable WebCrypto Ed25519; refresh signed by device key |
+| R-DEV-1 | Device register / list / revoke | ✅ | `cli_e2e.sh` revoke → `device_revoked` |
+| R-DEV-2 | New-device notice on other devices | ✅ | Security events + Activity tab |
+| R-DEV-3 | VMK rotation | ✅ | sync rotation rebase; Playwright vault-key test |
 
 ### Vault items
-| ID | Requirement | Phase | Status |
-|----|-------------|-------|--------|
-| R-ITEM-1 | Login, Secure Note, SSH Key items | P2 | ⬜ |
-| R-ITEM-2 | Encrypt before any storage or upload | P2 | ⬜ (container format ✅ in P1) |
-| R-ITEM-3 | Local search | P2 | ⬜ |
-| R-ITEM-4 | Mask / reveal / copy with feedback | P2 | ⬜ |
-| R-ITEM-5 | TOTP (RFC 6238) | P2 | ⬜ |
-| R-ITEM-6 | Password generator | P2 | ⬜ |
-| R-ITEM-7 (S) | Native clipboard clearing | P6 | ⬜ |
+| ID | Requirement | Status | Evidence |
+|----|-------------|--------|----------|
+| R-ITEM-1 | Login, Secure Note, SSH Key items | ✅ | `vault-core` item tests; editor |
+| R-ITEM-2 | Encrypt before any storage or upload | ✅ | IndexedDB inspection test; export plaintext check |
+| R-ITEM-3 | Local search | ✅ | `vault-core::search`; search box |
+| R-ITEM-4 | Mask / reveal / copy with feedback | ✅ | Playwright (masked until reveal, DOM check) |
+| R-ITEM-5 | TOTP (RFC 6238) | ✅ | RFC vectors; live code in UI |
+| R-ITEM-6 | Password generator | ✅ | χ² on 10⁶ samples; EFF wordlist |
+| R-ITEM-7 (S) | Native clipboard clearing | ⬜ | CLI prints fields on request only; no clipboard yet |
 
 ### Sync
-| ID | Requirement | Phase | Status |
-|----|-------------|-------|--------|
-| R-SYNC-1 | End-to-end encrypted sync | P4 | ⬜ |
-| R-SYNC-2 | Offline edits queue and sync later | P4 | ⬜ |
-| R-SYNC-3 | Optimistic concurrency, conflicts keep both | P4 | ⬜ |
-| R-SYNC-4 | Authenticated tombstones, 90-day retention | P4 | ⬜ (authenticated tombstone format ✅ in P1) |
-| R-SYNC-5 | Idempotent mutations | P4 | ⬜ |
-| R-SYNC-6 | Stale devices / old schema handling | P4 | ⬜ |
+| ID | Requirement | Status | Evidence |
+|----|-------------|--------|----------|
+| R-SYNC-1 | End-to-end encrypted sync | ✅ | two-device Playwright + CLI e2e |
+| R-SYNC-2 | Offline edits queue and sync later | ✅ | outbox; simulation |
+| R-SYNC-3 | Optimistic concurrency, conflicts keep both | ✅ | simulation (10,000 scenarios); conflict UI |
+| R-SYNC-4 | Authenticated tombstones, 90-day retention | ✅ | tombstone containers; scheduled retention job |
+| R-SYNC-5 | Idempotent mutations | ✅ | idempotency log; Worker tests |
+| R-SYNC-6 | Stale devices / old schema handling | ✅ | 410 resync, `min_client_version`, read-only newer schema |
 
 ### SSH and CLI (macOS)
-| ID | Requirement | Phase | Status |
-|----|-------------|-------|--------|
-| R-SSH-1 | Import OpenSSH keys (Ed25519, ECDSA P-256) | P2/P6 | ⬜ |
-| R-SSH-2 | SSH agent on a Unix socket | P6 | ⬜ |
-| R-SSH-3 | Keys only while unlocked | P6 | ⬜ |
-| R-SSH-4 | CLI commands (`urk unlock`, `lock`, `status`, `sync`, `item`, `ssh`, `agent`) | P6 | 🟡 binary exists (`urk --version` only) |
-| R-SSH-5 (S) | Per-use signing confirmation | V1.1 | ⬜ |
+| ID | Requirement | Status | Evidence |
+|----|-------------|--------|----------|
+| R-SSH-1 | Import OpenSSH keys (Ed25519, ECDSA P-256) | ✅ | `vault-core::ssh` tests; web + CLI import |
+| R-SSH-2 | SSH agent on a Unix socket | 🟡 | OpenSSH tests on Linux; macOS launchd untested on a real Mac (O-6) |
+| R-SSH-3 | Keys only while unlocked | ✅ | `cli_e2e.sh`: ssh fails after `urk lock` |
+| R-SSH-4 | CLI commands | ✅ | `urk init/account/login/unlock/lock/status/sync/item/ssh/device/agent/export/restore/forget` |
+| R-SSH-5 (S) | Per-use signing confirmation | ⬜ | V1.1 (native app) |
 
 ### Security
-| ID | Requirement | Phase | Status |
-|----|-------------|-------|--------|
-| R-SEC-1 | No secrets in logs, URLs, errors, … | all | 🟡 redacting secret types, lint rules, fixed error bodies; canary tests in P2/P3 |
-| R-SEC-2 | Versioned formats with algorithm ids | all | 🟡 crypto containers ✅; item/API/storage formats later |
-| R-SEC-3 | Reviewed crypto libraries only | P1 | ✅ RustCrypto only; OpenSSL banned in `deny.toml` |
-| R-SEC-4 | Cross-platform test vectors | P1 | ✅ native ↔ WASM ↔ fixtures, plus independent Python check |
-| R-SEC-5 | `cargo deny` + `pnpm audit` in CI | P0 | ✅ |
-| R-SEC-10 | Strict CSP, no third-party scripts | P7 | 🟡 API sends strict headers; web CSP in P7 |
-| R-SEC-11 | Reproducible web build + published hash | P7 | ⬜ |
-| R-SEC-12 (S) | Service worker bundle pinning | P7 | ⬜ |
-| R-SEC-13 | Separate app and API hosts | P7 | ⬜ |
+| ID | Requirement | Status | Evidence |
+|----|-------------|--------|----------|
+| R-SEC-1 | No secrets in logs, URLs, errors | 🟡 | redacting types, lint rules, fixed errors, storage tests; full canary test open |
+| R-SEC-2 | Versioned formats with algorithm ids | ✅ | containers, item `schema`, export `version`, API `/v1` |
+| R-SEC-3 | Reviewed crypto libraries only | ✅ | RustCrypto; OpenSSL banned |
+| R-SEC-4 | Cross-platform test vectors | ✅ | native ↔ WASM ↔ Python |
+| R-SEC-5 | `cargo deny` + `pnpm audit` in CI | ✅ | CI |
+| R-SEC-10 | Strict CSP, no third-party scripts | ✅ | `_headers`; Playwright production checks for violations |
+| R-SEC-11 | Reproducible web build + published hash | ✅ | CI builds twice; About shows the hash (publishing is part of O-8) |
+| R-SEC-12 (S) | Service worker bundle pinning | ✅ | `src/sw/sw.js`; update needs approval |
+| R-SEC-13 | Separate app and API hosts | 🟡 | two Workers and origins configured; real hosts with O-8 |
 
 ### UX
-| ID | Requirement | Phase | Status |
-|----|-------------|-------|--------|
-| R-UX-1 | Responsive desktop / tablet / phone | P2 | 🟡 empty three-pane shell only |
-| R-UX-2 | Keyboard + accessible labels | P2 | ⬜ |
-| R-UX-3 | Lock / sync / device state indicators | P2–P4 | ⬜ |
-| R-UX-4 | Original design system | P2 | 🟡 tokens + contrast test; components in P2 |
+| ID | Requirement | Status | Evidence |
+|----|-------------|--------|----------|
+| R-UX-1 | Responsive desktop / tablet / phone | ✅ | breakpoints at 1199/767 px; real devices O-12 |
+| R-UX-2 | Keyboard + accessible labels | ✅ | shortcuts; axe in Playwright (no serious issues) |
+| R-UX-3 | Lock / sync / device state indicators | ✅ | sync indicator, lock screen, revoked screen, update banner |
+| R-UX-4 | Original design system | ✅ | tokens + components in `apps/web/src/ui` |
 
 ## Other open items
 
-- Docs: everything planned for the design phase exists. Keep `docs/` in step with code.
-- Environment: the `urkey` cloud environment's updated setup script (installs `cf`, not
-  Wrangler) has not yet run in a fresh session.
-- Dependencies on the owner's devices: iPhone (O-4), Mac (O-6, O-7).
+- Spec changes pending owner approval are listed in the crypto spec §15 (O-1, O-10).
+- The `urkey` cloud environment could also install `openssh-server` for `cli_e2e.sh`. In this
+  session it was already present.
 
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
 
-- **2026-11-26** — Brief reviewed and adjusted; all design docs and ADRs written; P0 scaffolding
-  and CI; switched Worker tooling to `cf` (no Wrangler); CLI binary renamed `urk`; crypto design
-  approved; P1 crypto core implemented with vectors (native, WASM, Python), fuzz targets and
-  benchmarks; CI green. Stopped at: P1 gate (O-1…O-4). Added this file.
+- **2026-11-26 (b)** — Owner directive "finish all remaining phases".
+  - Built: `vault-core`, `sync-core`, the Worker API, the SSH agent, the `urk` CLI,
+    `wasm-bindings` and the full web app.
+  - P7: strict CSP + Trusted Types, pinned service worker, reproducible release hash, and
+    encrypted export/restore (ADR 0017).
+  - CI gained e2e and macOS jobs plus deploy dry runs. Added README and a deployment runbook,
+    and refreshed the roadmap and threat model.
+  - Stopped at: owner items O-1…O-12; nothing deployed.
+- **2026-11-26 (a)** — Brief reviewed and adjusted; all design docs and ADRs written; P0
+  scaffolding and CI; switched Worker tooling to `cf`; CLI renamed `urk`; crypto design
+  approved; P1 crypto core with vectors (native, WASM, Python), fuzz targets and benchmarks.
