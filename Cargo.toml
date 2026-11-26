@@ -1,0 +1,43 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/crypto-core",
+    "crates/vault-core",
+    "crates/sync-core",
+    "crates/wasm-bindings",
+    "crates/cli",
+    "crates/ssh-agent",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.97"
+license = "UNLICENSED"
+publish = false
+repository = "https://github.com/hungdohuy/urkey"
+
+[workspace.dependencies]
+crypto-core = { path = "crates/crypto-core" }
+vault-core = { path = "crates/vault-core" }
+sync-core = { path = "crates/sync-core" }
+# Must match the installed wasm-bindgen-cli exactly (see CLAUDE.md, Toolchain).
+wasm-bindgen = "=0.2.130"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "allow"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+todo = "deny"
+unimplemented = "deny"
+
+[profile.release]
+lto = true
+codegen-units = 1

@@ -1,0 +1,21 @@
+# Build output
+/target/
+dist/
+apps/web/src/wasm/
+
+# Dependencies
+node_modules/
+
+# Wrangler local state and secrets — never commit (CLAUDE.md security rules)
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp

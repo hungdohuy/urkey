@@ -1,0 +1,22 @@
+[package]
+name = "wasm-bindings"
+description = "Narrow WebAssembly API over the urkey core for the web app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+sync-core.workspace = true
+wasm-bindgen.workspace = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O"]

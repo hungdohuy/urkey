@@ -1,0 +1,21 @@
+{
+  // urkey API Worker (docs/architecture/overview.md §8). Stores ciphertext only.
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "urkey-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "urkey",
+      // Placeholder for local development. Replaced with the real id when the database is
+      // created at deployment time (roadmap P7).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "MIN_CLIENT_VERSION": "0.0.0"
+  }
+}

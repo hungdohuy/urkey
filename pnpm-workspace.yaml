@@ -1,0 +1,8 @@
+packages:
+  - apps/web
+  - cloud/workers/*
+
+# Only these packages may run install scripts (they download platform binaries).
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
