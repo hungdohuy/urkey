@@ -33,11 +33,15 @@ impl AuthKey {
         Ok(Self::from_seed(&seed))
     }
 
-    vectors_pub! {
-        /// Builds a device key from a fixed seed (test vectors only).
-        fn device_key_from_seed(seed: &[u8; 32]) -> Self {
-            Self::from_seed(seed)
-        }
+    /// Generates a random device key seed to store (Keychain / WebCrypto) and reload later
+    /// with [`AuthKey::device_key_from_seed`].
+    pub fn generate_device_seed() -> Result<Zeroizing<[u8; 32]>> {
+        Ok(Zeroizing::new(rng::array()?))
+    }
+
+    /// Loads a device key from its stored 32-byte seed. Also used by test vectors.
+    pub fn device_key_from_seed(seed: &[u8; 32]) -> Self {
+        Self::from_seed(seed)
     }
 
     /// The 32-byte public key.

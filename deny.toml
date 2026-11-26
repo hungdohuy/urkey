@@ -32,6 +32,13 @@ confidence-threshold = 0.9
 # The list is a policy, not an inventory of what is used today.
 unused-allowed-license = "allow"
 
+# webpki-root-certs (Mozilla CA list, CDLA-Permissive-2.0) is only pulled in by
+# rustls-platform-verifier on wasm32, a target the CLI is never built for. Native builds use the
+# OS trust store.
+exceptions = [
+    { name = "webpki-root-certs", allow = ["CDLA-Permissive-2.0"] },
+]
+
 [licenses.private]
 ignore = true
 
