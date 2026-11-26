@@ -35,14 +35,20 @@ A personal, local-first, end-to-end encrypted password manager:
 
 ## Development
 
-Toolchain and all commands: [`CLAUDE.md`](CLAUDE.md#commands). Short version:
+Everything runs locally through one script (Linux and macOS):
 
 ```bash
-pnpm install && pnpm wasm
-pnpm --filter api dev          # API on :8787 (cf dev, local D1)
-pnpm --filter web dev          # app on :5173
-cargo test --workspace && pnpm -r test
+scripts/dev.sh doctor     # which tools are installed
+scripts/dev.sh setup      # install deps, build the WASM core, local API secret + D1
+scripts/dev.sh dev        # API on :8787 + app on :5173 (Ctrl-C stops both; --fresh resets local data)
+scripts/dev.sh preview    # production build (CSP, service worker) on :4173
+scripts/dev.sh cli init --server http://localhost:8787   # urk with a throwaway profile
+scripts/dev.sh test       # fast checks (~40 s)
+scripts/dev.sh e2e        # CLI + agent + sshd, then Playwright
+scripts/dev.sh check      # everything CI runs
 ```
+
+Toolchain details and individual commands: [`CLAUDE.md`](CLAUDE.md#commands).
 
 Deployment: [`docs/operations/deploy.md`](docs/operations/deploy.md). Only the owner deploys, with
 their own Cloudflare credentials.

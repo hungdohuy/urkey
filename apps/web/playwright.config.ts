@@ -22,24 +22,30 @@ export default defineConfig({
     // The production build on the real asset Worker (workerd): CSP, Trusted Types, service worker.
     { name: "production", testMatch: /production\.spec\.ts/, use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:4173" } },
   ],
+  // SIGTERM, not Playwright's default SIGKILL: `cf dev` runs its server in a new session, so a
+  // SIGKILL to the process group orphans it and Playwright then waits forever for its output
+  // to close (the "stuck after the last test" hang). SIGTERM lets cf dev stop its own child.
   webServer: [
     {
       command: "pnpm --filter api run e2e:server",
       cwd: "../..",
       url: "http://localhost:8787/v1/health",
       reuseExistingServer: process.env["CI"] === undefined,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
       timeout: 120_000,
     },
     {
       command: "pnpm exec vite build && pnpm exec vite preview --port 4173 --strictPort",
       url: "http://localhost:4173",
       reuseExistingServer: process.env["CI"] === undefined,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
       timeout: 180_000,
     },
     {
       command: "pnpm exec vite --port 5173 --strictPort",
       url: "http://localhost:5173",
       reuseExistingServer: process.env["CI"] === undefined,
+      gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
       timeout: 120_000,
     },
   ],

@@ -109,8 +109,10 @@ Dependency direction: `crypto-core` ← `vault-core` ← `sync-core` ← {`wasm-
 
 ## Commands
 
-All of these run and pass on the P0 skeleton (CI runs the same set in
-`.github/workflows/ci.yml`). Keep this list in sync with reality.
+One entry point: **`scripts/dev.sh`** (`setup`, `dev`, `preview`, `test`, `e2e`, `check`, `cli`,
+`stop`, `doctor`). CI's Linux job runs `scripts/dev.sh check`, the macOS job builds and tests the
+CLI and agent (`.github/workflows/ci.yml`). The individual commands below are what the script
+runs. Keep this list in sync with reality.
 
 ```bash
 # Rust

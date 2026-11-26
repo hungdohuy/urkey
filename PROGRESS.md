@@ -12,7 +12,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | Last updated | 2026-11-26 |
 | Current phase | **P2–P7 engineering complete.** Every phase gate still needs owner-only steps (below). |
 | Branch | `claude/youthful-archimedes-v6dhz1` (no PR yet) |
-| CI | 7 jobs: rust, deny, interop, wasm, web, e2e, macos. Latest result: see the session log. |
+| CI | 2 jobs: Linux (`scripts/dev.sh check`, everything incl. e2e) and macOS (CLI + agent). |
 | V1 requirements | 42 of 48 done, 4 partly done, 2 open (R-ITEM-7, a *should*; R-SSH-5, planned for V1.1) |
 | Data | **Test data only** until M2. Nothing is deployed. |
 
@@ -151,6 +151,12 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-26 (c)** — Added `scripts/dev.sh` (local setup/dev/preview/test/e2e/check/cli).
+  Fixed the Playwright hang after the last test: `cf dev` runs its server in a new session,
+  so Playwright's SIGKILL left it orphaned; the web servers are now stopped with SIGTERM. Fixed
+  agent socket paths on macOS. CI reduced to 2 jobs; the Linux job runs `scripts/dev.sh check`.
+  Before this change, the CI run for `f7240d3` passed every job except the hanging browser step.
 
 - **2026-11-26 (b)** — Owner directive "finish all remaining phases".
   - Built: `vault-core`, `sync-core`, the Worker API, the SSH agent, the `urk` CLI,

@@ -1,5 +1,10 @@
 name: CI
 
+# Two jobs. Linux runs the same `scripts/dev.sh check` you run locally, which covers Rust,
+# crypto vectors (native, WASM, Python), dependency audits, web and worker checks, reproducible
+# build, deploy dry runs, and end to end (CLI + agent + sshd, Playwright). macOS builds and tests
+# the CLI and agent, where platform differences (Keychain, socket paths) show up.
+
 on:
   push:
     branches: [main, "claude/**"]
@@ -17,135 +22,38 @@ env:
   CF_SEND_TELEMETRY: "false"
 
 jobs:
-  rust:
-    name: Rust (fmt, clippy, test)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install pinned toolchain (rust-toolchain.toml)
-        run: rustup show active-toolchain || rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all --check
-      - run: cargo clippy --workspace --all-targets -- -D warnings
-      - run: cargo test --workspace
-      - name: Test vectors (crypto-core, test-vectors feature)
-        run: cargo test -p crypto-core --features test-vectors
-
-  deny:
-    name: Dependencies (cargo deny)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v2
-        with:
-          command: check
-
-  interop:
-    name: Independent vector check (Python)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - run: pip install -r tests/interop/python/requirements.txt
-      - run: python tests/interop/python/verify_crypto_v1.py
-
-  wasm:
-    name: WASM build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install pinned toolchain (rust-toolchain.toml)
-        run: rustup show active-toolchain || rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack@0.15.1,wasm-bindgen-cli@0.2.130
-      # wasm-opt is disabled for wasm-bindings (Cargo.toml metadata): binaryen 108 breaks the
-      # reference-type tables emitted by wasm-bindgen 0.2.130.
-      - run: wasm-pack build crates/wasm-bindings --target web --release --out-dir ../../apps/web/src/wasm
-      - name: Test vectors inside WASM (Node) + Argon2id timing
-        run: wasm-pack test --node crates/crypto-core --features test-vectors --test wasm -- --nocapture
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wasm-pkg
-          path: apps/web/src/wasm
-          retention-days: 3
-
-  web:
-    name: Web + Worker (lint, typecheck, test, build)
-    needs: wasm
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: wasm-pkg
-          path: apps/web/src/wasm
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm -r lint
-      - run: pnpm -r typecheck
-      - run: pnpm -r test
-      - run: pnpm --filter web build
-      - name: Reproducible web build (R-SEC-11)
-        run: |
-          out=apps/web/.cloudflare/output/v1/workers/default/assets/release.json
-          first=$(cat "$out")
-          rm -rf apps/web/.cloudflare/output
-          pnpm --filter web build
-          second=$(cat "$out")
-          echo "$second"
-          [ "$first" = "$second" ] || { echo "release hash differs between two builds"; exit 1; }
-      - run: pnpm --filter api build
-      - name: Deploy dry runs (no credentials; nothing is deployed)
-        run: |
-          (cd cloud/workers/api && pnpm exec cf deploy --dry-run)
-          (cd apps/web && pnpm exec cf deploy --dry-run)
-      - name: Audit npm dependencies
-        run: pnpm audit --prod
-
-  e2e:
-    name: End-to-end (CLI + agent + sshd, browser dev + production)
-    needs: wasm
+  linux:
+    name: Linux (scripts/dev.sh check)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: wasm-pkg
-          path: apps/web/src/wasm
-      - name: Install pinned toolchain (rust-toolchain.toml)
+      - name: Install pinned Rust toolchain (rust-toolchain.toml)
         run: rustup show active-toolchain || rustup toolchain install
       - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.1,wasm-bindgen-cli@0.2.130,cargo-deny
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - name: OpenSSH client and server
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: System packages (OpenSSH for the agent end-to-end test)
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq openssh-client openssh-server
           sudo mkdir -p /run/sshd
           # sshd (UsePAM no) refuses public-key logins for accounts with a locked password.
           sudo usermod -p '*' "$USER"
+          pip install -q -r tests/interop/python/requirements.txt
       - run: pnpm install --frozen-lockfile
-      - name: CLI + SSH agent end to end (cf dev, local D1, real sshd)
-        timeout-minutes: 8
-        run: tests/integration/cli_e2e.sh
       - run: pnpm --filter web exec playwright install --with-deps chromium
-      - name: Browser end to end (dev server and production build)
-        timeout-minutes: 12
-        run: pnpm --filter web exec playwright test --trace off --reporter=line
-        env:
-          CI: "1"
-      - if: failure() || cancelled()
+      - run: pnpm wasm
+      - run: scripts/dev.sh check
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results
@@ -153,14 +61,14 @@ jobs:
           retention-days: 7
 
   macos:
-    name: macOS (CLI, agent, Keychain build)
+    name: macOS (CLI + agent)
     runs-on: macos-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Install pinned toolchain (rust-toolchain.toml)
+      - name: Install pinned Rust toolchain (rust-toolchain.toml)
         run: rustup show active-toolchain || rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy -p urkey-cli -p ssh-agent --all-targets -- -D warnings
       - run: cargo test -p vault-core -p sync-core -p ssh-agent -p urkey-cli
-      - run: cargo build --release -p urkey-cli
-      - run: ./target/release/urk --version
+      - run: cargo build --release -p urkey-cli && ./target/release/urk --version
