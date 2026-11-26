@@ -17,13 +17,16 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 
 ## Resume here (next steps, in order)
 
-1. ⏸ Owner answers the [open decisions](#waiting-on-the-owner) for P1.
-2. ⏸ Owner reviews the P1 diff (`crates/crypto-core`, `tests/fixtures/crypto-v1`) — P1 review gate.
-3. ⬜ Check the first nightly fuzz run (`.github/workflows/fuzz.yml`) once it has run.
-4. ⬜ iPhone unlock benchmark — needs the owner's iPhone. Plan: add a tiny benchmark page in P2
-   and record the result in crypto spec §4.2.
-5. ⬜ When the P1 gate passes: owner moves `CLAUDE.md` to **P2** (local vault + web UI). P3
-   (server, auth, devices) may run in parallel with P2.
+Owner directive (2026-11-26): complete all remaining phases P2–P7. Status of that work:
+
+1. ✅ `vault-core` (items, TOTP, generator, SSH keys, records, account ops) — P2/P5 core.
+2. ✅ `sync-core` (sans-IO engine, 10,000-scenario simulation) — P4 core.
+3. ✅ Worker API (`docs/architecture/api.md`, 31 tests in the Workers runtime) — P3/P4/P5 server.
+4. ✅ SSH agent (OpenSSH interop tests) and `urk` CLI with `tests/integration/cli_e2e.sh` — P6.
+5. 🟡 **Next:** `wasm-bindings` (handle-based API in a Web Worker) + web app screens (P2–P5 UI),
+   then Playwright end-to-end tests against `cf dev`.
+6. ⬜ P7 hardening: app hosting with CSP, service-worker pinning, reproducible build check,
+   encrypted export, CI jobs for e2e and macOS, docs refresh.
 
 ## Waiting on the owner
 
