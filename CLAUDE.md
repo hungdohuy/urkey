@@ -98,8 +98,8 @@ Dependency direction: `crypto-core` ← `vault-core` ← `sync-core` ← {`wasm-
 
 ## Commands
 
-These are the intended commands; create the matching config/scripts as the scaffolding lands,
-and keep this list in sync with reality.
+All of these run and pass on the P0 skeleton (CI runs the same set in
+`.github/workflows/ci.yml`). Keep this list in sync with reality.
 
 ```bash
 # Rust
@@ -108,8 +108,8 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo deny check
 
-# WASM
-wasm-pack build crates/wasm-bindings --target web --release --out-dir ../../apps/web/src/wasm
+# WASM (output is git-ignored)
+pnpm wasm                    # = wasm-pack build crates/wasm-bindings --target web --release --out-dir ../../apps/web/src/wasm
 
 # Web + Worker (from repo root)
 pnpm install
@@ -117,7 +117,9 @@ pnpm -r lint
 pnpm -r typecheck
 pnpm -r test
 pnpm --filter web build
-pnpm --filter api dev        # wrangler dev, local D1
+pnpm audit --prod
+pnpm --filter api dev        # wrangler dev on :8787, local D1; GET /v1/health
+pnpm --filter api migrate:local
 ```
 
 Never run `wrangler deploy` or remote D1/R2 commands unless the owner asks for it in the
@@ -132,6 +134,9 @@ current task.
 - API and storage schemas are defined once and checked by shared JSON fixtures on both the
   Rust and TS side.
 - ADRs: `docs/decisions/NNNN-short-title.md` with Status / Context / Decision / Consequences.
+- Lint rules enforce some security rules: no `console`, no `Math.random`, no
+  `dangerouslySetInnerHTML`, Rust `unwrap/expect/panic/print` denied outside tests.
+- Exact versions everywhere (`save-exact`, pinned toolchain, `wasm-bindgen = "=0.2.130"`).
 - Commits: imperative subject, body explains why; reference R-/D- ids where relevant.
 - UI: original design system (no 1Password assets, names or copy); sensitive values masked by
   default; every action has visible feedback; keyboard accessible.

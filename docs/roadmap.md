@@ -25,6 +25,8 @@ P4 only for CLI sync.
 
 ## P0 — Foundation (design phase, current)
 
+**Status (2026-11-26):** deliverables done; waiting on the owner approval below.
+
 **Deliverables**
 - Remaining docs: `security/recovery.md`, `security/devices.md`.
 - ADR files 0001–0013 (decision index in `decisions/README.md`).
@@ -38,7 +40,9 @@ P4 only for CLI sync.
 - Every command in `CLAUDE.md` runs and passes on the skeleton, locally and in CI.
 - `cargo deny check` passes with the licence allow-list in `deny.toml`.
 - Owner approves `cryptographic-design.md` for implementation (moves `CLAUDE.md` out of the
-  design phase).
+  design phase). **Open.**
+- CI green on GitHub. **Open** — the workflow exists and every step passes locally; it has not
+  run on GitHub yet.
 
 ## P1 — Crypto core
 

@@ -98,7 +98,7 @@ Properties this structure gives (each needs a test):
   server holding the auth *public* key learns nothing about the KEK.
 - Device key pairs are random and independent of the vault keys; they only authenticate sessions.
 
-Proposed algorithm choices (ADR candidates, final details in the crypto spec):
+Algorithm choices (accepted; exact details in the crypto spec):
 
 | Purpose | Proposal | Reason |
 |---------|----------|--------|
@@ -244,8 +244,8 @@ rust-toolchain.toml       pinned toolchain + wasm32 target
 
 ## 11. Decisions
 
-D-1 to D-15 were accepted by the owner on 2026-11-26 ("use your recommendations").
-Accepted decisions still need their ADR files written; D-16 onward are proposals.
+D-1 to D-18 were accepted by the owner on 2026-11-26 ("use your recommendations").
+ADR files are in `docs/decisions/`.
 
 | ID | Decision | Choice | Status | ADR |
 |----|----------|--------|--------|-----|
@@ -264,8 +264,8 @@ Accepted decisions still need their ADR files written; D-16 onward are proposals
 | D-13 | CLI local store | SQLite via `rusqlite` (bundled); contents are ciphertext only | Accepted | 0011 |
 | D-14 | When clients sync | Only while unlocked in V1 (pulled records are verified immediately) | Accepted | sync.md |
 | D-15 | Server write serialization | Conditional write + sequence bump in one D1 batch; fall back to one Durable Object per account if concurrency tests fail | Accepted | sync.md |
-| D-16 | Web UI building blocks | Radix UI primitives + CSS Modules with CSS-variable tokens + bundled Lucide icons; system fonts | Proposed | 0012 |
-| D-17 | Where the WASM core runs in the browser | A dedicated Web Worker; the UI gets display data only | Proposed | 0013 |
-| D-18 | Emergency Kit format | Locally rendered printable page + text download; no PDF library | Proposed | ux/screens.md |
+| D-16 | Web UI building blocks | Radix UI primitives + CSS Modules with CSS-variable tokens + bundled Lucide icons; system fonts | Accepted | 0012 |
+| D-17 | Where the WASM core runs in the browser | A dedicated Web Worker; the UI gets display data only | Accepted | 0013 |
+| D-18 | Emergency Kit format | Locally rendered printable page + text download; no PDF library | Accepted | ux/screens.md |
 
 ADR 0001 records the overall technology stack from the brief.
