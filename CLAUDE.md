@@ -98,7 +98,7 @@ Dependency direction: `crypto-core` ← `vault-core` ← `sync-core` ← {`wasm-
   bump both together.
 - `wasm-pack 0.15.1`. `wasm-opt` is **disabled** for `wasm-bindings` (Cargo.toml metadata):
   binaryen 108 breaks the reference-type tables of wasm-bindgen 0.2.130 in browsers.
-- Node 22, pnpm (workspace).
+- Node 22.22.2+ (pinned in `.nvmrc`; 24.15+ and 26+ also work: `package.json` engines, enforced by `engine-strict`), pnpm (workspace).
 - Cloudflare tooling is the **`cf` CLI** (`cf@1.0.0-rc.6`, a project dev dependency of
   `cloud/workers/api`) with the Vite bundler (`@cloudflare/vite-plugin` 2.0). **Do not use or
   install Wrangler** and do not add a Wrangler config file (ADR 0014). Worker config lives in

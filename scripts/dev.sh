@@ -80,10 +80,32 @@ stop_all() {
 trap stop_all EXIT
 trap 'exit 130' INT TERM
 
+# Node must satisfy package.json "engines" (.npmrc has engine-strict=true; jsdom needs this range).
+NODE_RANGE="22.22.2+ (Node 22), 24.15.0+ (Node 24) or 26+"
+need_node() {
+  have node || die "Node.js is missing. Install Node 22 LTS (see .nvmrc), e.g. 'nvm install' or 'brew install node@22'."
+  local v major minor patch
+  v=$(node --version | sed 's/^v//')
+  IFS=. read -r major minor patch <<<"$v"
+  local okv=0
+  if ((major == 22)) && ((minor > 22 || (minor == 22 && patch >= 2))); then okv=1
+  elif ((major == 24)) && ((minor >= 15)); then okv=1
+  elif ((major >= 26)); then okv=1
+  fi
+  ((okv)) || die "Node $v is too old for this repo; need $NODE_RANGE.
+  Fix one of:
+    nvm install && nvm use          # uses .nvmrc (Node 22)
+    fnm install && fnm use          # same, with fnm
+    brew upgrade node               # Homebrew (macOS): latest Node
+  then rerun: scripts/dev.sh setup"
+  have pnpm || die "pnpm is missing: corepack enable && corepack prepare pnpm@10.28.0 --activate"
+}
+
 need_wasm() {
   [[ -f "$WEB_DIR/src/wasm/wasm_bindings.js" ]] || { step "build WASM (first run)"; (cd "$ROOT" && pnpm wasm); }
 }
 need_node_modules() {
+  need_node
   [[ -d "$ROOT/node_modules" ]] || { step "pnpm install (first run)"; (cd "$ROOT" && pnpm install --frozen-lockfile); }
 }
 
@@ -116,7 +138,8 @@ cmd_doctor() {
 cmd_setup() {
   step "check tools"
   local t
-  for t in cargo node pnpm wasm-pack wasm-bindgen; do have "$t" || die "$t is missing (run: scripts/dev.sh doctor)"; done
+  need_node
+  for t in cargo wasm-pack wasm-bindgen; do have "$t" || die "$t is missing (run: scripts/dev.sh doctor)"; done
   rustup target list --installed 2>/dev/null | grep -q wasm32-unknown-unknown || rustup target add wasm32-unknown-unknown
   step "pnpm install"
   (cd "$ROOT" && pnpm install --frozen-lockfile)
