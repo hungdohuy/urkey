@@ -142,7 +142,7 @@ jobs:
       - run: pnpm --filter web exec playwright install --with-deps chromium
       - name: Browser end to end (dev server and production build)
         timeout-minutes: 12
-        run: pnpm --filter web e2e -- --reporter=line
+        run: pnpm --filter web e2e --reporter=line
         env:
           CI: "1"
       - if: failure() || cancelled()
