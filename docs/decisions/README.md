@@ -20,6 +20,7 @@ Accepted ADRs are binding; change one only with a new ADR that supersedes it.
 | [0013](0013-wasm-in-web-worker.md) | Run the WASM core in a dedicated Web Worker | D-17 | Accepted |
 | [0014](0014-cf-cli-instead-of-wrangler.md) | Use the `cf` CLI instead of Wrangler | D-19 | Accepted |
 | [0015](0015-cli-binary-name.md) | CLI binary is named `urk` | D-20 | Accepted |
+| [0016](0016-ssh-key-library-and-agent-protocol.md) | SSH key library and agent protocol implementation | Q-4 | Accepted |
 
 D-10, D-11, D-12, D-14, D-15 and D-18 are recorded in the documents named in
 `docs/architecture/overview.md` §11 rather than as separate ADRs.

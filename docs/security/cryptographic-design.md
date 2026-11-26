@@ -425,7 +425,7 @@ Before real credentials are stored, a reviewer must check at least:
 | Q-1 | Argon2id params (D-10) | Accepted: 64 MiB / t=3 / p=1, floor 32 MiB / t=2. Still to confirm with an iPhone PWA benchmark. |
 | Q-2 | New Recovery Key on every VMK rotation? | Accepted: yes (D-12, §7.10) |
 | Q-3 | Optional recovery delay (threat model T-12) | Accepted: not in v1 (D-11) |
-| Q-4 | Agent-protocol crate choice | Open: decide in the dependency-review ADR |
+| Q-4 | Agent-protocol crate choice | Resolved: ADR 0016 (`ssh-key` 0.7 RC, own protocol code; avoids RUSTSEC-2026-0387) |
 | Q-5 | How is a snapshot's DEK wrapped? Kind 0x03's context is `account_id ‖ item_id` and has no snapshot form. | Open, needed in P7. Proposal: a DEK wrap whose `item_id` is the `snapshot_id`, or a new kind. |
 
 ## 15. Change log

@@ -4,12 +4,13 @@ urkey is a personal, local-first, end-to-end encrypted password manager: a React
 a Rust core (compiled to WASM for the web), a Rust CLI + SSH agent for macOS, and a
 Cloudflare Workers API that stores ciphertext only.
 
-## Current phase: P1 — crypto core
+## Current phase: P2–P7 (owner directive, 2026-11-26)
 
-The owner approved `docs/security/cryptographic-design.md` for implementation on 2026-11-26.
-Work follows `docs/roadmap.md`: **only the current phase** (P1: `crates/crypto-core`, its test
-vectors, fuzzing and benchmarks). Implement the spec exactly; any deviation or ambiguity is a
-spec change that needs the owner's approval first (record it in the spec's change log).
+The owner approved `docs/security/cryptographic-design.md` for implementation and then directed
+that all remaining roadmap phases (P2–P7) be completed. Implement the specs exactly; any
+deviation or ambiguity is a spec change recorded in the relevant change log and flagged in
+`PROGRESS.md` for the owner. Owner-only steps (code review, device measurements, deployment
+credentials, M1/M2) stay listed in `PROGRESS.md` and are never faked.
 Real credentials must not be stored until milestone M2 (independent review, roadmap).
 The owner updates this section when the phase changes.
 
