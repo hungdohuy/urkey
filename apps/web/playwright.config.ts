@@ -17,7 +17,11 @@ export default defineConfig({
     trace: "off",
     permissions: ["clipboard-read", "clipboard-write"],
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "dev", testMatch: /vault\.spec\.ts/, use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:5173" } },
+    // The production build on the real asset Worker (workerd): CSP, Trusted Types, service worker.
+    { name: "production", testMatch: /production\.spec\.ts/, use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:4173" } },
+  ],
   webServer: [
     {
       command: "pnpm --filter api run e2e:server",
@@ -25,6 +29,12 @@ export default defineConfig({
       url: "http://localhost:8787/v1/health",
       reuseExistingServer: process.env["CI"] === undefined,
       timeout: 120_000,
+    },
+    {
+      command: "pnpm exec vite build && pnpm exec vite preview --port 4173 --strictPort",
+      url: "http://localhost:4173",
+      reuseExistingServer: process.env["CI"] === undefined,
+      timeout: 180_000,
     },
     {
       command: "pnpm exec vite --port 5173 --strictPort",

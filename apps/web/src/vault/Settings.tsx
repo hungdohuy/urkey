@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { errorText, useApp } from "../app/context";
 import type { DeviceRecord, SecurityEvent } from "../core/protocol";
 import { KitStep } from "../screens/Onboarding";
+import { installedRelease } from "../sw/register";
 import { Actions, Banner, Button, Modal, PasswordField, StrengthMeter, TextField, css } from "../ui/kit";
 import s from "./vault.module.css";
 
@@ -292,11 +293,15 @@ function AppearanceTab() {
 function AboutTab() {
   const { state, call } = useApp();
   const [forget, setForget] = useState(false);
+  const [release, setRelease] = useState("…");
+  useEffect(() => {
+    void installedRelease().then(setRelease);
+  }, []);
   return (
     <div className={s.section}>
       <p style={{ margin: 0 }}>urkey web {__APP_VERSION__}</p>
       <p className={s.meta} style={{ margin: 0 }}>
-        Build hash: <span className={css.mono}>{__BUILD_HASH__}</span> — compare with the published release hash (R-SEC-11).
+        Release hash: <span className={css.mono} data-testid="release-hash">{release}</span> — compare it with the published hash of this release.
       </p>
       <p className={s.meta} style={{ margin: 0 }}>
         Server: {state.apiOrigin}

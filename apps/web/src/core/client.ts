@@ -1,5 +1,7 @@
 /** UI-side proxy for the core worker. */
 import type { Method, Methods, Notice, Request, Response } from "./protocol";
+import { scriptUrl } from "./trusted";
+import workerUrl from "./worker.ts?worker&url";
 
 export class CoreError extends Error {
   constructor(readonly code: string) {
@@ -13,7 +15,7 @@ export interface CoreClient {
 }
 
 export function createWorkerClient(): CoreClient {
-  const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+  const worker = new Worker(scriptUrl(workerUrl), { type: "module" });
   let next = 1;
   const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: unknown) => void }>();
   const listeners = new Set<(n: Notice) => void>();

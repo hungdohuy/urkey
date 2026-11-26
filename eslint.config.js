@@ -6,7 +6,7 @@ import globals from "globals";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/.wrangler/**", "**/.cloudflare/**", "apps/web/src/wasm/**", "target/**"],
+    ignores: ["**/dist/**", "**/node_modules/**", "**/.wrangler/**", "**/.cloudflare/**", "apps/web/src/wasm/**", "apps/web/src/sw/sw.js", "target/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,

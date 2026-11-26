@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { registerServiceWorker, type UpdateInfo } from "./sw/register";
 import { AppProvider, useApp } from "./app/context";
 import { createWorkerClient, type CoreClient } from "./core/client";
 import { LockScreen, Revoked, Welcome } from "./screens/Onboarding";
@@ -41,11 +42,34 @@ function Root() {
 
 let defaultClient: CoreClient | null = null;
 
+/** Announces a new release waiting in the service worker; activation needs user approval (R-SEC-12). */
+function UpdateBanner() {
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  useEffect(() => {
+    registerServiceWorker(setUpdate);
+  }, []);
+  if (update === null) return null;
+  return (
+    <div role="alert" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 60, background: "var(--warn-bg)", color: "var(--warn)", padding: "var(--space-2) var(--space-4)", display: "flex", gap: "var(--space-3)", alignItems: "center", flexWrap: "wrap" }}>
+      <span>
+        A new version of urkey&apos;s code is available (release <code>{update.release.slice(0, 12)}</code>). Check it matches the published release hash before updating.
+      </span>
+      <button type="button" onClick={update.activate}>
+        Update now
+      </button>
+      <button type="button" onClick={() => setUpdate(null)}>
+        Not now
+      </button>
+    </div>
+  );
+}
+
 /** Application root. `client` is injectable for tests; the app uses one core worker per page. */
 export function App({ client }: { client?: CoreClient }) {
   const c = useMemo(() => client ?? (defaultClient ??= createWorkerClient()), [client]);
   return (
     <AppProvider client={c}>
+      {client === undefined && <UpdateBanner />}
       <Root />
       <Toasts />
     </AppProvider>
