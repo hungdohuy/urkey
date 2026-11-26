@@ -15,7 +15,9 @@ Accepted ADRs are binding; change one only with a new ADR that supersedes it.
 | 0008 | No RSA signing in V1 (D-7) | Accepted — file to write |
 | 0009 | Item ciphertext in D1, snapshots in R2 (D-8) | Accepted — file to write |
 | 0010 | Hand-written Worker router (D-9) | Accepted — file to write |
-| 0011 | CLI local store: SQLite via rusqlite (D-13) | Proposed |
+| 0011 | CLI local store: SQLite via rusqlite (D-13) | Accepted — file to write |
+| 0012 | Web UI building blocks (D-16) | Proposed |
+| 0013 | WASM core in a dedicated Web Worker (D-17) | Proposed |
 
 ## Template
 

@@ -244,8 +244,8 @@ rust-toolchain.toml       pinned toolchain + wasm32 target
 
 ## 11. Decisions
 
-D-1 to D-12 were accepted by the owner on 2026-11-26 ("use your recommendations").
-Accepted decisions still need their ADR files written; D-13 onward are proposals.
+D-1 to D-15 were accepted by the owner on 2026-11-26 ("use your recommendations").
+Accepted decisions still need their ADR files written; D-16 onward are proposals.
 
 | ID | Decision | Choice | Status | ADR |
 |----|----------|--------|--------|-----|
@@ -261,8 +261,11 @@ Accepted decisions still need their ADR files written; D-13 onward are proposals
 | D-10 | Argon2id params | 64 MiB / t=3 / p=1, floor 32 MiB / t=2; confirm with iPhone PWA benchmark | Accepted, benchmark pending | crypto spec |
 | D-11 | Optional recovery delay (threat model T-12) | Not in V1; reconsider for V1.1 | Accepted | crypto spec |
 | D-12 | New Recovery Key on every VMK rotation | Yes (the unlocked client does not hold the RK) | Accepted | crypto spec |
-| D-13 | CLI local store | SQLite via `rusqlite` (bundled); contents are ciphertext only | Proposed | 0011 |
-| D-14 | When clients sync | Only while unlocked in V1 (pulled records are verified immediately) | Proposed | sync.md |
-| D-15 | Server write serialization | Conditional write + sequence bump in one D1 batch; fall back to one Durable Object per account if concurrency tests fail | Proposed | sync.md |
+| D-13 | CLI local store | SQLite via `rusqlite` (bundled); contents are ciphertext only | Accepted | 0011 |
+| D-14 | When clients sync | Only while unlocked in V1 (pulled records are verified immediately) | Accepted | sync.md |
+| D-15 | Server write serialization | Conditional write + sequence bump in one D1 batch; fall back to one Durable Object per account if concurrency tests fail | Accepted | sync.md |
+| D-16 | Web UI building blocks | Radix UI primitives + CSS Modules with CSS-variable tokens + bundled Lucide icons; system fonts | Proposed | 0012 |
+| D-17 | Where the WASM core runs in the browser | A dedicated Web Worker; the UI gets display data only | Proposed | 0013 |
+| D-18 | Emergency Kit format | Locally rendered printable page + text download; no PDF library | Proposed | ux/screens.md |
 
 ADR 0001 records the overall technology stack from the brief.

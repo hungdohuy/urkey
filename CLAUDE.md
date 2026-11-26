@@ -23,7 +23,8 @@ When the phase changes, the owner will update this section.
 | `docs/architecture/sync.md` | Sync protocol, conflicts, idempotency, special situations. |
 | `docs/security/` | Threat model, crypto design, recovery, devices. |
 | `docs/decisions/` | ADRs. Accepted ADRs are binding. |
-| `docs/ux/` | Design principles and screen/component map. |
+| `docs/ux/` | Design principles, design system, screens and components. |
+| `docs/roadmap.md` | Phases P0–P7 with acceptance gates; work happens in the current phase only. |
 
 Reference requirement and decision ids (R-SYNC-3, D-2, ...) in code comments, tests and commits
 where it helps traceability.
