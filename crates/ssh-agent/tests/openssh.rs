@@ -38,7 +38,8 @@ impl Drop for Fixture {
 }
 
 fn start() -> Fixture {
-    let dir = std::env::temp_dir().join(format!(
+    // Not temp_dir(): on macOS it is so long that socket paths exceed sun_path (104 bytes).
+    let dir = std::path::PathBuf::from("/tmp").join(format!(
         "urkey-agent-test-{}-{}",
         std::process::id(),
         rand_suffix()
@@ -195,4 +196,13 @@ fn socket_is_private_and_a_second_agent_is_refused() {
         & 0o777;
     assert_eq!(dir_mode, 0o700);
     assert!(server::bind(&f.sock).is_err());
+}
+
+#[test]
+fn overlong_socket_path_is_refused_clearly() {
+    let long = std::path::PathBuf::from("/tmp").join("x".repeat(server::MAX_SOCKET_PATH));
+    let err = server::bind(&long.join("agent.sock")).unwrap_err();
+    assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
+    assert!(err.to_string().contains("too long"));
+    assert!(!long.exists(), "nothing is created for a refused path");
 }

@@ -54,8 +54,34 @@ fn serve_connection(agent: &Agent, mut stream: UnixStream) {
     }
 }
 
+/// Longest socket path the platform accepts (`sun_path` minus the terminating NUL).
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "freebsd",
+    target_os = "openbsd",
+    target_os = "netbsd"
+))]
+pub const MAX_SOCKET_PATH: usize = 103;
+/// Longest socket path the platform accepts (`sun_path` minus the terminating NUL).
+#[cfg(not(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "freebsd",
+    target_os = "openbsd",
+    target_os = "netbsd"
+)))]
+pub const MAX_SOCKET_PATH: usize = 107;
+
 /// Prepares the socket path: parent directory 0700, stale socket removed.
 pub fn bind(path: &Path) -> io::Result<UnixListener> {
+    use std::os::unix::ffi::OsStrExt;
+    if path.as_os_str().as_bytes().len() > MAX_SOCKET_PATH {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "the agent socket path is too long for this system; use a shorter URKEY_HOME",
+        ));
+    }
     if let Some(dir) = path.parent() {
         fs::create_dir_all(dir)?;
         fs::set_permissions(dir, fs::Permissions::from_mode(0o700))?;
