@@ -57,7 +57,7 @@ Returns `AccountState` (data-model §2) and the device list. Used after login, a
   "has_more": false
 }
 ```
-- If `since < tombstone_horizon` → `410 resync_required` (§8.1).
+- If `0 < since < tombstone_horizon` → `410 resync_required` (§8.1). `since=0` (a full resync) is always allowed.
 - An item appears at most once per page, at its latest `seq`.
 
 ### 3.3 `POST /v1/sync/push`

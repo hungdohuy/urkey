@@ -285,6 +285,12 @@ Both clients store the same logical data. Everything except settings is cipherte
   decrypted is written to IndexedDB, `localStorage`, the Cache API or service-worker caches.
 - Schema changes use IndexedDB `onupgradeneeded`, forward-only, one function per version.
 
+**Implementation note (2026-11-26):** the sync engine (`crates/sync-core`) keeps the `items`,
+`outbox`, `conflicts`, `known_revisions` and `events` stores above as one serialized document
+per account (`SyncState`), saved after each change. This is simpler and atomic; it is fine for
+personal vaults (hundreds to low thousands of items). Split it into separate stores if vaults
+grow past ~2,000 items.
+
 ### 4.2 CLI / agent (SQLite, D-13)
 
 File: `~/Library/Application Support/urkey/vault.db`, directory mode 0700, file mode 0600.
