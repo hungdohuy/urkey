@@ -2063,6 +2063,8 @@ checksum = "9ab365ce29ba0232367502b2894556ae77a9c214d33dbf453fdba7f586905918"
 name = "wasm-bindings"
 version = "0.0.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "sync-core",
  "wasm-bindgen",
 ]
