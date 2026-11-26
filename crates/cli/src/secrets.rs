@@ -3,12 +3,17 @@
 //! - macOS: Keychain generic passwords (service `dev.urkey`), one entry per data directory.
 //! - Other platforms (development only): `secrets.json` (mode 0600) in the data directory.
 
+#[cfg(not(target_os = "macos"))]
 use crate::vault_core;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(not(target_os = "macos"))]
+use std::path::PathBuf;
 
 use zeroize::Zeroizing;
 
-use crate::error::{CliError, Result};
+#[cfg(not(target_os = "macos"))]
+use crate::error::CliError;
+use crate::error::Result;
 
 pub trait SecretStore {
     fn get(&self, name: &str) -> Result<Option<Zeroizing<Vec<u8>>>>;
@@ -75,11 +80,13 @@ mod keychain {
     }
 }
 
-#[cfg_attr(target_os = "macos", allow(dead_code))]
+/// Development-only store. Not compiled on macOS: there, secrets live only in the Keychain.
+#[cfg(not(target_os = "macos"))]
 pub struct FileStore {
     path: PathBuf,
 }
 
+#[cfg(not(target_os = "macos"))]
 impl FileStore {
     fn load(&self) -> Result<Zeroizing<String>> {
         match std::fs::read_to_string(&self.path) {
@@ -107,6 +114,7 @@ impl FileStore {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 impl SecretStore for FileStore {
     fn get(&self, name: &str) -> Result<Option<Zeroizing<Vec<u8>>>> {
         let raw = self.load()?;

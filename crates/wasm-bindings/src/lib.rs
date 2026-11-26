@@ -526,10 +526,15 @@ impl Core {
     /// which opens with the current master password and Secret Key. Returns the file's JSON.
     pub fn export_vault(&self, now_ms: f64) -> JsResult<String> {
         let vault = self.vault()?;
-        let account = self.account.as_ref().ok_or_else(|| err("invalid: no account"))?;
+        let account = self
+            .account
+            .as_ref()
+            .ok_or_else(|| err("invalid: no account"))?;
         let material = account::material_from_wire(account).map_err(verr)?;
         if material.vmk_id != vault.vmk_id {
-            return Err(err("invalid: the vault key is changing; sync and try again"));
+            return Err(err(
+                "invalid: the vault key is changing; sync and try again",
+            ));
         }
         let records: Vec<_> = sync_core::effective(&self.sync)
             .map_err(verr)?
