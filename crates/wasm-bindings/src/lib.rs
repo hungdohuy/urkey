@@ -28,7 +28,7 @@ use sync_core::vault_core::wire::{
     AccountState, ChangesResponse, DeviceInfo, PreloginResponse, PushRequest, PushResponse,
     SignedRequest,
 };
-use sync_core::vault_core::{VaultError, ssh};
+use sync_core::vault_core::{VaultError, export, ssh};
 use sync_core::{PullOutcome, Resolution, RotationSnapshot, SyncState, Write};
 use wasm_bindgen::prelude::*;
 
@@ -520,6 +520,51 @@ impl Core {
     /// Restores a deleted item (undo): writes the previous content as a new revision.
     pub fn restore_item(&mut self, id: &str, item_json: &str, now: &str) -> JsResult<String> {
         self.save_item(id, item_json, now)
+    }
+
+    /// Encrypted export of this device's live items (ADR 0017): the account's own ciphertext,
+    /// which opens with the current master password and Secret Key. Returns the file's JSON.
+    pub fn export_vault(&self, now_ms: f64) -> JsResult<String> {
+        let vault = self.vault()?;
+        let account = self.account.as_ref().ok_or_else(|| err("invalid: no account"))?;
+        let material = account::material_from_wire(account).map_err(verr)?;
+        if material.vmk_id != vault.vmk_id {
+            return Err(err("invalid: the vault key is changing; sync and try again"));
+        }
+        let records: Vec<_> = sync_core::effective(&self.sync)
+            .map_err(verr)?
+            .into_values()
+            .map(|e| e.record)
+            .collect();
+        let file = export::build(&material, &records, now_ms as i64).map_err(verr)?;
+        to_json(&file)
+    }
+
+    /// Opens an export with the master password and Secret Key it was made with, and adds its
+    /// items to this vault as new items. Returns how many were added.
+    pub fn restore_export(
+        &mut self,
+        json_text: &str,
+        password: &str,
+        secret_key_text: &str,
+        now: &str,
+    ) -> JsResult<u32> {
+        let file = export::parse(json_text.as_bytes()).map_err(verr)?;
+        let ask = encoding::parse_account_secret_key(secret_key_text)
+            .map_err(|_| err("invalid: secret key"))?;
+        let items = export::open(&file, password, &ask).map_err(verr)?;
+        let vault = self
+            .unlocked
+            .as_ref()
+            .map(|u| &u.vault)
+            .ok_or_else(|| err("locked"))?;
+        for item in &items {
+            let mut item = item.clone();
+            item.updated_at = now.to_owned();
+            item.updated_by = self.device_id.clone();
+            sync_core::write(&mut self.sync, vault, Write::Create(&item)).map_err(verr)?;
+        }
+        Ok(items.len() as u32)
     }
 
     /// The current TOTP code of an item.

@@ -430,6 +430,17 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
     return null;
   },
 
+  // Encrypted export and restore (ADR 0017). The file holds only ciphertext.
+  exportVault: async () => need().export_vault(Date.now()),
+
+  async restoreExport({ json, password, secretKey }) {
+    const added = need().restore_export(json, password, secretKey, new Date().toISOString());
+    await saveSync();
+    notify({ notice: "items_changed" });
+    syncSoon();
+    return added;
+  },
+
   events: async () => JSON.parse(need().events()) as Methods["events"]["result"],
 
   async ackEvent({ seq }) {

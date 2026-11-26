@@ -290,6 +290,78 @@ function AppearanceTab() {
   );
 }
 
+/** Encrypted export and restore (ADR 0017, roadmap P7). */
+function BackupTab() {
+  const { call, toast } = useApp();
+  const [file, setFile] = useState<File | null>(null);
+  const [pw, setPw] = useState("");
+  const [secret, setSecret] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const download = async () => {
+    try {
+      const json = await call("exportVault", undefined);
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `urkey-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast("Encrypted export saved. It opens with your current master password and Secret Key.", "ok");
+    } catch (e) {
+      toast(errorText(e), "error");
+    }
+  };
+  const restore = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    if (file === null) return;
+    setBusy(true);
+    setError(null);
+    void (async () => {
+      try {
+        const added = await call("restoreExport", { json: await file.text(), password: pw, secretKey: secret });
+        toast(`Restored ${String(added)} item${added === 1 ? "" : "s"} as new items.`, "ok");
+        setPw("");
+        setSecret("");
+        setFile(null);
+      } catch (err) {
+        const text = errorText(err);
+        setError(text.startsWith("Couldn't unlock") ? "Couldn't open the export. Check the master password and Secret Key it was made with." : text);
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+  return (
+    <div className={s.section}>
+      <p style={{ margin: 0 }}>
+        An export is an encrypted copy of your items. It opens only with the master password and Secret Key you have when you make it, so keep it with your Emergency Kit.
+      </p>
+      <div>
+        <Button onClick={() => void download()}>Export encrypted copy</Button>
+      </div>
+      <form onSubmit={restore} style={{ display: "grid", gap: "var(--space-3)" }} aria-label="Restore from an export">
+        <h2 style={{ margin: 0, fontSize: "var(--text-ml)" }}>Restore from an export</h2>
+        <p className={s.meta} style={{ margin: 0 }}>
+          Items from the export are added to this vault as new items. Nothing is replaced.
+        </p>
+        <label className={css.field}>
+          <span className={css.label}>Export file</span>
+          <input className={css.input} type="file" accept=".json,application/json" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        </label>
+        <PasswordField label="Master password of the export" value={pw} onChange={(e) => setPw(e.target.value)} />
+        <TextField label="Secret Key of the export" value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="off" spellCheck={false} />
+        {error !== null && <Banner tone="danger">{error}</Banner>}
+        <Actions>
+          <Button variant="primary" type="submit" disabled={busy || file === null || pw === "" || secret === ""}>
+            {busy ? "Restoring…" : "Restore"}
+          </Button>
+        </Actions>
+      </form>
+    </div>
+  );
+}
+
 function AboutTab() {
   const { state, call } = useApp();
   const [forget, setForget] = useState(false);
@@ -328,6 +400,7 @@ const TABS: { id: string; label: string }[] = [
   { id: "security", label: "Security" },
   { id: "devices", label: "Devices" },
   { id: "activity", label: "Activity" },
+  { id: "backup", label: "Backup" },
   { id: "appearance", label: "Appearance" },
   { id: "about", label: "About" },
 ];
@@ -346,6 +419,7 @@ export function SettingsPage({ tab, onTab }: { tab: string; onTab: (t: string) =
       {tab === "security" && <SecurityTab />}
       {tab === "devices" && <DevicesTab />}
       {tab === "activity" && <ActivityTab />}
+      {tab === "backup" && <BackupTab />}
       {tab === "appearance" && <AppearanceTab />}
       {tab === "about" && <AboutTab />}
     </div>

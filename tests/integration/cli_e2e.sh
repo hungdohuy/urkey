@@ -103,4 +103,18 @@ printf '%s\n' "$PASSWORD" | u1 device revoke "$ID2" --password-stdin
 if printf '%s\n' "$PASSWORD" | u2 sync --password-stdin 2>"$WORK/revoked.err"; then fail "revoked device could still sync"; fi
 grep -q "removed from your account" "$WORK/revoked.err" || fail "revoked device did not get device_revoked"
 
+step "encrypted export from device 1, restore into a fresh account (roadmap P7)"
+printf '%s\n' "$PASSWORD" | u1 export --out "$WORK/vault.urkey-export" --password-stdin | grep -q "Exported 2 items" || fail "export"
+[[ $(stat -c %a "$WORK/vault.urkey-export") == 600 ]] || fail "export file is not 0600"
+if grep -qF -e "Example login" -e alice -e "$PW1" "$WORK/vault.urkey-export"; then fail "plaintext in the export"; fi
+D3="$WORK/device3"; u3() { URKEY_HOME="$D3" "$URK" "$@"; }
+PASSWORD3="test-only e2e second account password"
+u3 init --server "http://localhost:$PORT" --name "E2E fresh" >/dev/null
+printf '%s\n' "$PASSWORD3" | u3 account create --email "fresh-$EMAIL" --password-stdin >/dev/null
+if printf '%s\n%s\n%s\n' "$PASSWORD3" "wrong password" "$SECRET" | u3 restore "$WORK/vault.urkey-export" --password-stdin 2>/dev/null; then fail "restore with a wrong password"; fi
+printf '%s\n%s\n%s\n' "$PASSWORD3" "$PASSWORD" "$SECRET" | u3 restore "$WORK/vault.urkey-export" --password-stdin | grep -q "Restored 2 items" || fail "restore"
+PW3=$(printf '%s\n' "$PASSWORD3" | u3 item get "Example" --field password --password-stdin)
+[[ "$PW3" == "$PW1" ]] || fail "restored password differs"
+printf '%s\n' "$PASSWORD3" | u3 ssh list --password-stdin | grep -q "E2E key" || fail "SSH key not restored"
+
 printf '\nALL CLI END-TO-END CHECKS PASSED\n'

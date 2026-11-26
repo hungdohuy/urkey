@@ -3,6 +3,7 @@
 //! - [`item`]: item plaintext model and validation (`docs/architecture/data-model.md` §1)
 //! - [`record`]: encrypted item records and their encryption/decryption
 //! - [`account`]: account creation, unlock and every key rotation (crypto design §7)
+//! - [`export`]: encrypted export files (ADR 0017)
 //! - [`totp`]: RFC 6238 one-time codes (crypto design §11.1)
 //! - [`generator`]: password and passphrase generator (§11.2)
 //! - [`ssh`]: OpenSSH key import and signing (§11.3)
@@ -13,6 +14,7 @@
 pub mod account;
 pub mod b64;
 mod error;
+pub mod export;
 pub mod generator;
 pub mod item;
 pub mod record;

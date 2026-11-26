@@ -293,6 +293,15 @@ impl Profile {
         Ok(out)
     }
 
+    /// This device's current encrypted records (for export).
+    pub fn records(&self) -> Result<Vec<record::ItemRecord>> {
+        let state = self.sync_state()?;
+        Ok(sync_core::effective(&state)?
+            .into_values()
+            .map(|e| e.record)
+            .collect())
+    }
+
     pub fn write(&self, key: &VaultKey, change: sync_core::Write<'_>) -> Result<ItemId> {
         let mut state = self.sync_state()?;
         let out = sync_core::write(&mut state, key, change)?;

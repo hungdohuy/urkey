@@ -4,7 +4,7 @@
  */
 import AxeBuilder from "@axe-core/playwright";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
@@ -182,4 +182,56 @@ test.describe.serial("urkey in the browser", () => {
     await device1.getByRole("button", { name: "Sync now" }).click();
     await expect(device1.getByRole("heading", { name: "This device was removed from your account" })).toBeVisible();
   });
+});
+
+/** Creates an account on a fresh device and returns its Secret Key. */
+async function createAccount(page: Page, address: string, password: string): Promise<string> {
+  await page.getByRole("button", { name: "Create a new vault" }).click();
+  await page.getByLabel("Email").fill(address);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Master password", { exact: true }).fill(password);
+  await page.getByLabel("Repeat master password").fill(password);
+  await page.getByRole("button", { name: "Create vault" }).click();
+  const sk = (await page.getByTestId("kit-secret-key").textContent()) ?? "";
+  const rk = (await page.getByTestId("kit-recovery-key").textContent()) ?? "";
+  await page.getByLabel(/last 4 characters/).fill(rk.replace(/-/g, "").slice(-4));
+  await page.getByRole("button", { name: "Open my vault" }).click();
+  await expect(page.getByText("Your vault is empty")).toBeVisible();
+  return sk;
+}
+
+test("encrypted export restores into a fresh account (roadmap P7, ADR 0017)", async ({ browser }) => {
+  const stamp = String(Date.now());
+  const source = await newDevice(browser);
+  const sourceKey = await createAccount(source, `export-${stamp}@example.test`, PASSWORD);
+  await source.getByRole("button", { name: "New item" }).click();
+  await source.getByRole("menuitem", { name: "Secure Note" }).click();
+  await source.getByRole("textbox", { name: "Title" }).fill("Exported note");
+  await source.getByRole("textbox", { name: "Note", exact: true }).fill("survives the round trip");
+  await source.getByRole("button", { name: "Save" }).click();
+  await expect(source.getByRole("heading", { name: "Exported note" })).toBeVisible();
+
+  await source.getByRole("button", { name: "Settings" }).click();
+  await source.getByRole("tab", { name: "Backup" }).click();
+  const [download] = await Promise.all([source.waitForEvent("download"), source.getByRole("button", { name: "Export encrypted copy" }).click()]);
+  const path = await download.path();
+  const json = readFileSync(path, "utf8");
+  expect(JSON.parse(json)).toMatchObject({ format: "urkey-export", version: 1 });
+  for (const plain of ["Exported note", "survives the round trip"]) expect(json).not.toContain(plain);
+
+  const target = await newDevice(browser);
+  await createAccount(target, `restore-${stamp}@example.test`, NEW_PASSWORD);
+  await target.getByRole("button", { name: "Settings" }).click();
+  await target.getByRole("tab", { name: "Backup" }).click();
+  await target.getByLabel("Export file").setInputFiles(path);
+  await target.getByLabel("Secret Key of the export").fill(sourceKey);
+  await target.getByLabel("Master password of the export", { exact: true }).fill("wrong password");
+  await target.getByRole("button", { name: "Restore" }).click();
+  await expect(target.getByText(/Couldn't open the export/)).toBeVisible();
+  await target.getByLabel("Master password of the export", { exact: true }).fill(PASSWORD);
+  await target.getByRole("button", { name: "Restore" }).click();
+  await expect(target.getByText("Restored 1 item as new items.")).toBeVisible();
+  await target.getByRole("button", { name: /^All items/ }).click();
+  await target.getByRole("option", { name: /Exported note/ }).click();
+  await expect(target.getByRole("region", { name: "Notes" })).toContainText("survives the round trip");
 });

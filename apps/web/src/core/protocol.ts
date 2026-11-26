@@ -118,6 +118,8 @@ export interface Methods {
   getSettings: { params: undefined; result: Settings };
   setSettings: { params: Settings; result: null };
   secretKeyText: { params: undefined; result: string };
+  exportVault: { params: undefined; result: string };
+  restoreExport: { params: { json: string; password: string; secretKey: string }; result: number };
   forget: { params: undefined; result: AppState };
 }
 

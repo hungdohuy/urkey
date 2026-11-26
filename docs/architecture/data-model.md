@@ -318,3 +318,13 @@ key are in the Keychain, not in the database (crypto §8.2). Migrations use `PRA
 | D1 schema | migration files | Worker |
 | IndexedDB / SQLite | DB version / `user_version` | clients |
 | Keys and envelopes | `keyset_version`, `vmk_id` | account |
+| Export file | `format: "urkey-export"`, `version` (ADR 0017) | `vault-core` |
+
+## 7. Export file (ADR 0017)
+
+The export file is JSON, with binary fields in base64url without padding. Fields:
+`format`, `version`, `created_at` (informational), `account_id`, `kdf_salt`, `kdf_params`,
+`vmk_id`, `unlock_env` (container 0x01), and `items[]` of `{item_id, revision, dek_wrap, body}`
+(containers 0x03/0x04, live items only). It holds nothing the server does not already store.
+Unknown `format`/`version` values and unknown fields are rejected. A restore adds the items as
+new items in the target vault.

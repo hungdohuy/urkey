@@ -93,6 +93,24 @@ enum Command {
     /// The SSH agent.
     #[command(subcommand)]
     Agent(AgentCmd),
+    /// Write an encrypted export of the vault (ADR 0017). It opens with the master password and
+    /// Secret Key that are current now.
+    Export {
+        /// Output file (created with mode 0600; must not exist).
+        #[arg(long)]
+        out: std::path::PathBuf,
+        #[arg(long)]
+        password_stdin: bool,
+    },
+    /// Add the items of an encrypted export to this vault as new items (ADR 0017).
+    Restore {
+        /// Export file from `urk export`.
+        file: std::path::PathBuf,
+        /// Read, one per line: this vault's master password, then the export's master password
+        /// and Secret Key.
+        #[arg(long)]
+        password_stdin: bool,
+    },
     /// Sign out and remove all urkey data from this device.
     Forget {
         /// Required: confirms deleting local data.
@@ -242,6 +260,14 @@ fn run(cli: Cli) -> Result<()> {
         Command::Agent(AgentCmd::Run) => agent_run(),
         Command::Agent(AgentCmd::Install) => agent_install(),
         Command::Agent(AgentCmd::Status) => agent_status(),
+        Command::Export {
+            out,
+            password_stdin,
+        } => export(&out, password_stdin),
+        Command::Restore {
+            file,
+            password_stdin,
+        } => restore(&file, password_stdin),
         Command::Forget { yes } => forget(yes),
     }
 }
@@ -365,6 +391,58 @@ fn unlock_and_sync(
         Err(e) => output::err(&format!("Offline: {e} Showing this device's copy.")),
     }
     Ok((unlocked, password))
+}
+
+fn export(out: &std::path::Path, password_stdin: bool) -> Result<()> {
+    use std::io::Write;
+    use std::os::unix::fs::OpenOptionsExt;
+    let mut p = Profile::open()?;
+    let (unlocked, _) = unlock_and_sync(&mut p, password_stdin)?;
+    let material = account::material_from_wire(&p.account()?)?;
+    if material.vmk_id != unlocked.vault.vmk_id {
+        return Err(CliError::new(
+            "the vault key is changing; sync and try again",
+        ));
+    }
+    let records = p.records()?;
+    let file = vault_core::export::build(&material, &records, now_ms())?;
+    let json = serde_json::to_vec_pretty(&file)
+        .map_err(|_| CliError::new("could not encode the export"))?;
+    let mut f = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(out)
+        .map_err(|_| CliError::new("could not create the export file (does it already exist?)"))?;
+    f.write_all(&json)?;
+    f.sync_all()?;
+    say(&format!(
+        "Exported {} items. The file is encrypted: it opens with your current master password and \
+         Secret Key, so keep it with your Emergency Kit.",
+        file.items.len()
+    ));
+    Ok(())
+}
+
+fn restore(path: &std::path::Path, password_stdin: bool) -> Result<()> {
+    let bytes = std::fs::read(path).map_err(|_| CliError::new("could not read the export file"))?;
+    let file = vault_core::export::parse(&bytes)?;
+    let mut p = Profile::open()?;
+    let (mut unlocked, password) = unlock_and_sync(&mut p, password_stdin)?;
+    let export_password = read_password(password_stdin, "Master password of the export: ")?;
+    let secret_text = read_password(password_stdin, "Secret Key of the export (UK1-…): ")?;
+    let secret_key = encoding::parse_account_secret_key(&secret_text)?;
+    let items = vault_core::export::open(&file, &export_password, &secret_key)?;
+    for item in &items {
+        p.write(&unlocked.vault, sync_core::Write::Create(item))?;
+    }
+    say(&format!("Restored {} items as new items.", items.len()));
+    match p.sync(&mut unlocked, &password) {
+        Ok(s) if s.pending == 0 => say("Synced."),
+        Ok(_) => say("Some changes are not synced yet; run `urk sync` later."),
+        Err(e) => output::err(&format!("Offline: {e} The items will sync later.")),
+    }
+    Ok(())
 }
 
 fn agent_socket(p: &Profile) -> std::path::PathBuf {
