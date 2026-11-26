@@ -41,8 +41,8 @@ P4 only for CLI sync.
 - `cargo deny check` passes with the licence allow-list in `deny.toml`.
 - Owner approves `cryptographic-design.md` for implementation (moves `CLAUDE.md` out of the
   design phase). **Open.**
-- CI green on GitHub. **Open** — the workflow exists and every step passes locally; it has not
-  run on GitHub yet.
+- CI green on GitHub. **Done** — all four jobs passed on GitHub Actions (runs 1 and 2,
+  2026-11-26).
 
 ## P1 — Crypto core
 
