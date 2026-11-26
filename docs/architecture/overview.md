@@ -256,5 +256,7 @@ rust-toolchain.toml       pinned toolchain + wasm32 target
 | D-8 | Item ciphertext location | D1 rows (padded); R2 for snapshots only | 0009 |
 | D-9 | Worker routing | Hono (small, typed) vs. hand-written router — prefer hand-written unless routes grow | 0010 |
 | D-10 | Argon2id params | 64 MiB / t=3 / p=1 pending benchmark on iPhone PWA | crypto spec |
+| D-11 | Optional recovery delay (threat model T-12) | Not in V1; reconsider for V1.1 | crypto spec Q-3 |
+| D-12 | New Recovery Key on every VMK rotation | Yes (the unlocked client does not hold the RK) | crypto spec Q-2 |
 
 ADR 0001 records the overall technology stack from the brief.
