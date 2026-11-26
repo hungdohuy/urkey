@@ -1,8 +1,8 @@
 # Cryptographic Design (v1)
 
-Status: **Draft — NOT approved for implementation.** The owner accepted the design decisions
-(D-1 to D-12) on 2026-11-26; the specification itself still needs the review in §13 before
-production cryptography is implemented.
+Status: **Approved for implementation (owner, 2026-11-26).** The independent review in §13 is
+still required before real credentials are stored (milestone M2). Changes after approval are
+listed in §15 and need owner approval.
 
 Related: [`threat-model.md`](threat-model.md), [`../architecture/overview.md`](../architecture/overview.md) §4–§7.
 
@@ -418,3 +418,9 @@ Before real credentials are stored, a reviewer must check at least:
 | Q-2 | New Recovery Key on every VMK rotation? | Accepted: yes (D-12, §7.10) |
 | Q-3 | Optional recovery delay (threat model T-12) | Accepted: not in v1 (D-11) |
 | Q-4 | Agent-protocol crate choice | Open: decide in the dependency-review ADR |
+
+## 15. Change log
+
+| Date | Change | Approved |
+|------|--------|----------|
+| 2026-11-26 | Approved for implementation | Owner |

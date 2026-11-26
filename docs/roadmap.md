@@ -23,9 +23,9 @@ flowchart LR
 P2 and P3 can run in parallel after P1. P6 can start its parsing/agent work after P2 and needs
 P4 only for CLI sync.
 
-## P0 — Foundation (design phase, current)
+## P0 — Foundation
 
-**Status (2026-11-26):** deliverables done; waiting on the owner approval below.
+**Status: complete (2026-11-26).**
 
 **Deliverables**
 - Remaining docs: `security/recovery.md`, `security/devices.md`.
@@ -40,11 +40,11 @@ P4 only for CLI sync.
 - Every command in `CLAUDE.md` runs and passes on the skeleton, locally and in CI.
 - `cargo deny check` passes with the licence allow-list in `deny.toml`.
 - Owner approves `cryptographic-design.md` for implementation (moves `CLAUDE.md` out of the
-  design phase). **Open.**
+  design phase). **Done** (2026-11-26).
 - CI green on GitHub. **Done** — all four jobs passed on GitHub Actions (runs 1 and 2,
   2026-11-26).
 
-## P1 — Crypto core
+## P1 — Crypto core (current)
 
 **Deliverables:** `crypto-core` implementing crypto design §3–§10: encodings, KDFs, containers,
 AEAD, signatures message builders, zeroizing secret types, uniform errors; test vectors in
