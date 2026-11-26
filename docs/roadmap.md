@@ -61,6 +61,18 @@ Argon2id benchmark in WASM.
   adjusted in the crypto spec.
 - Review gate part 1: owner (and ideally an external reviewer) reviews the P1 diff against §13.
 
+**Status (2026-11-26)**
+
+| Criterion | State |
+|-----------|-------|
+| Vectors native + WASM | Done: 6 sets; Rust native and wasm32/Node tests pass |
+| Independent Python reproduction | Done: 102/102 checks (same author as the Rust code, see fixtures README) |
+| Fuzzing | Targets done, 60 s each locally with no findings; the 10-min nightly job is set up but has not run yet |
+| Negative tests | Done: every byte flip, truncation, extension, wrong revision, weak params |
+| Secret types | Redacting `Debug` (as `CLAUDE.md` allows), no `Display`/`Clone`, tested; `#![forbid(unsafe_code)]`. The wording "no `Debug`" above is stricter than `CLAUDE.md` — owner to confirm |
+| Benchmark | Native 153 ms, WASM/Node 228–319 ms. **iPhone PWA: open** (needs a real device) |
+| Review gate part 1 | **Open:** owner review of the P1 diff |
+
 ## P2 — Local vault and web UI (no server)
 
 **Deliverables:** `vault-core` (item model, validation, unknown-field preservation, TOTP,

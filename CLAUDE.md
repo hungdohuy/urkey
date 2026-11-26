@@ -114,6 +114,12 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo deny check
+cargo test -p crypto-core --features test-vectors          # crypto vectors (native)
+URKEY_WRITE_VECTORS=1 cargo test -p crypto-core --features test-vectors --test vectors  # regenerate: spec change!
+wasm-pack test --node crates/crypto-core --features test-vectors --test wasm -- --nocapture
+python3 tests/interop/python/verify_crypto_v1.py           # needs tests/interop/python/requirements.txt
+cargo test -p crypto-core --release --test bench_argon2 -- --ignored --nocapture
+(cd crates/crypto-core && cargo +nightly fuzz run open_container -- -max_total_time=60)
 
 # WASM (output is git-ignored)
 pnpm wasm                    # = wasm-pack build crates/wasm-bindings --target web --release --out-dir ../../apps/web/src/wasm

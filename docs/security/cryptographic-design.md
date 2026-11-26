@@ -77,7 +77,7 @@ mechanism.
 | Secret | Format | Example shape (not a real key) |
 |--------|--------|--------------------------------|
 | ASK | `UK1-` + 26 payload chars + 1 check char, grouped 6-5-5-5-6 | `UK1-XXXXXX-XXXXX-XXXXX-XXXXX-XXXXXC` |
-| RK | `UKR1-` + 52 payload chars + 1 check char, groups of 4 | `UKR1-XXXX-XXXX-…-XXXC` |
+| RK | `UKR1-` + 52 payload chars + 1 check char; payload in 13 groups of 4, check char appended to the last group (§15) | `UKR1-XXXX-XXXX-…-XXXXC` |
 
 The version prefix lets a future format be recognized. Unknown prefixes are rejected.
 
@@ -122,6 +122,14 @@ Encoded as `kdf_params` (13 bytes): `alg(1)=0x01 ‖ u32be(m_kib) ‖ u32be(t) �
 - Calibration is a benchmark gate, not runtime tuning: before approval, measure on the slowest
   supported device (an iPhone PWA). Target ≤ 2 s unlock there. If 64 MiB fails (memory limit),
   lower `m` toward the minimum and raise `t`, and record the numbers here.
+
+  Measurements of the default parameters (64 MiB, t=3, p=1), full unlock derivation:
+
+  | Platform | Time | Source |
+  |----------|------|--------|
+  | Native, Intel Xeon 2.1 GHz (cloud VM, 4 vCPU) | 153 ms (best of 5) | `tests/bench_argon2.rs` |
+  | WASM in Node 22, same machine | 228–319 ms (3 runs) | `tests/wasm.rs` |
+  | iPhone PWA (Safari) | **not yet measured** | needs a real device (roadmap P1) |
 - Upgrades: a client may re-wrap with stronger params during a password change; the old
   envelope is replaced atomically.
 
@@ -216,7 +224,7 @@ offset  size  field
 | 0x04 | Item payload | `item_id` | item `DEK` | padded body (§5.4) |
 | 0x05 | Tombstone | `item_id` | item `DEK` | empty |
 | 0x06 | Local ASK wrap | `device_id` | local wrap key | `ASK` (16 B) |
-| 0x07 | Snapshot | `snapshot_id` | snapshot `DEK` | compressed export of item records |
+| 0x07 | Snapshot | `snapshot_id` | snapshot `DEK` | compressed export of item records (how the snapshot DEK is wrapped is open: Q-5) |
 
 On the wire (JSON) containers are base64url without padding.
 
@@ -418,9 +426,26 @@ Before real credentials are stored, a reviewer must check at least:
 | Q-2 | New Recovery Key on every VMK rotation? | Accepted: yes (D-12, §7.10) |
 | Q-3 | Optional recovery delay (threat model T-12) | Accepted: not in v1 (D-11) |
 | Q-4 | Agent-protocol crate choice | Open: decide in the dependency-review ADR |
+| Q-5 | How is a snapshot's DEK wrapped? Kind 0x03's context is `account_id ‖ item_id` and has no snapshot form. | Open, needed in P7. Proposal: a DEK wrap whose `item_id` is the `snapshot_id`, or a new kind. |
 
 ## 15. Change log
 
 | Date | Change | Approved |
 |------|--------|----------|
 | 2026-11-26 | Approved for implementation | Owner |
+| 2026-11-26 | §3.2: Recovery Key display grouping clarified. The table said "groups of 4" but 52 + 1 characters cannot be split that way; the implementation puts the check character at the end of the last group (`…-XXXXC`). Display only: the parser ignores separators, so no encoded value changes. | **Pending owner approval** |
+| 2026-11-26 | §4.2: benchmark results recorded (native and WASM; iPhone still pending). | Measurement only |
+| 2026-11-26 | §14: open question Q-5 added (snapshot DEK wrapping is unspecified). | Question only |
+
+## 16. Implementation
+
+`crates/crypto-core` implements §3–§10 (P1). Vectors: `tests/fixtures/crypto-v1/` (Rust native,
+Rust in WASM, and an independent Python check in `tests/interop/python/`). Fuzz targets:
+`crates/crypto-core/fuzz/`. Notes:
+
+- Secret types have a redacting `Debug` (prints `Name([REDACTED])`), no `Display`, no `Clone`.
+- HKDF's internal HMAC state is zeroized through the `hmac`/`sha2` `zeroize` features; the
+  Argon2 and XChaCha20-Poly1305 crates zeroize their state through their own features.
+- The explicit-nonce and explicit-seed functions used for vectors exist only with the
+  `test-vectors` feature, which refuses to compile in release builds.
+- TOTP (§11.1), the password generator (§11.2) and SSH keys (§11.3) are `vault-core` work (P2/P6).
