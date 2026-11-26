@@ -279,6 +279,38 @@ impl Core {
         Ok(())
     }
 
+    /// Unlock after another device rotated the vault key (sync.md §8.4) without losing unsynced
+    /// edits: opens the **old** envelope to snapshot pending edits, then unlocks with the new
+    /// account state. Next: pull every page, then `finish_rotation()`.
+    pub fn unlock_with_rotation(
+        &mut self,
+        password: &str,
+        secret_key: &[u8],
+        old_account_json: &str,
+        new_account_json: &str,
+    ) -> JsResult<()> {
+        self.set_account(old_account_json)?;
+        self.unlock(password, secret_key)?;
+        self.begin_rotation()?;
+        self.set_account(new_account_json)?;
+        let rotation = self.rotation.take();
+        let result = self.unlock(password, secret_key);
+        self.rotation = rotation;
+        result
+    }
+
+    /// Parses a typed Secret Key into its bytes (for the local wrap).
+    pub fn parse_secret_key(text: &str) -> JsResult<Vec<u8>> {
+        let k = encoding::parse_account_secret_key(text).map_err(|_| err("invalid: secret key"))?;
+        Ok(k.expose_secret().to_vec())
+    }
+
+    /// The Secret Key in Emergency Kit format (Settings › Security, recovery.md §1).
+    pub fn secret_key_text(&self) -> JsResult<String> {
+        let k = self.secret_key.as_ref().ok_or_else(|| err("locked"))?;
+        Ok(encoding::format_account_secret_key(k).to_string())
+    }
+
     // ---------------------------------------------------------------- sync
 
     /// Applies one page of `GET /v1/sync/changes`. Returns `{outcome, …report}`.
