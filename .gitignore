@@ -20,3 +20,9 @@ node_modules/
 .vscode/*
 !.vscode/extensions.json
 *.swp
+
+# cargo-fuzz working files
+crates/crypto-core/fuzz/target/
+crates/crypto-core/fuzz/corpus/
+crates/crypto-core/fuzz/artifacts/
+crates/crypto-core/fuzz/coverage/

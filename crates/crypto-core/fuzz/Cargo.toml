@@ -1,0 +1,37 @@
+[package]
+name = "crypto-core-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "UNLICENSED"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+crypto-core = { path = ".." }
+libfuzzer-sys = "0.4.13"
+
+# Not part of the main workspace: needs nightly and cargo-fuzz.
+[workspace]
+
+[[bin]]
+name = "open_container"
+path = "fuzz_targets/open_container.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_secret_keys"
+path = "fuzz_targets/parse_secret_keys.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_params_and_padding"
+path = "fuzz_targets/decode_params_and_padding.rs"
+test = false
+doc = false
+bench = false

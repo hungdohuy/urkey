@@ -64,6 +64,8 @@ jobs:
           tool: wasm-pack@0.15.1,wasm-bindgen-cli@0.2.130
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq binaryen
       - run: wasm-pack build crates/wasm-bindings --target web --release --out-dir ../../apps/web/src/wasm
+      - name: Test vectors inside WASM (Node) + Argon2id timing
+        run: wasm-pack test --node crates/crypto-core --features test-vectors --test wasm -- --nocapture
 
   web:
     name: Web + Worker (lint, typecheck, test, build)

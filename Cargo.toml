@@ -8,6 +8,8 @@ members = [
     "crates/cli",
     "crates/ssh-agent",
 ]
+# Fuzzing needs nightly and cargo-fuzz; it is its own workspace.
+exclude = ["crates/crypto-core/fuzz"]
 
 [workspace.package]
 version = "0.0.0"

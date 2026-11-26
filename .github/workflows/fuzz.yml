@@ -1,0 +1,33 @@
+name: Fuzz
+
+on:
+  schedule:
+    - cron: "17 3 * * *"   # nightly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.target }} (10 min)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [open_container, parse_secret_keys, decode_params_and_padding]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install nightly --profile minimal
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-fuzz
+      - name: Run
+        working-directory: crates/crypto-core
+        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=600
+      - name: Keep crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}
+          path: crates/crypto-core/fuzz/artifacts/
