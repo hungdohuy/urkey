@@ -9,7 +9,10 @@ use ssh_key::{Algorithm, EcdsaCurve, HashAlg, LineEnding, PrivateKey};
 use zeroize::Zeroizing;
 
 use crate::item::{SshAgentSettings, SshKeyFields};
+
 use crate::{Result, VaultError};
+/// Re-exported so the agent and CLI use exactly the pinned `ssh-key` version (ADR 0016).
+pub use ssh_key;
 
 /// The user-facing key type string stored in the item.
 fn key_type(alg: &Algorithm) -> Result<&'static str> {
@@ -108,6 +111,28 @@ impl AgentKey {
             key,
             comment: fields.comment.clone(),
         })
+    }
+
+    /// Wraps an already-decrypted key (e.g. received by the agent). Only Ed25519 and ECDSA P-256
+    /// are accepted (ADR 0008).
+    pub fn from_private_key(key: PrivateKey, comment: String) -> Result<Self> {
+        if key.is_encrypted() {
+            return Err(VaultError::Invalid("key is encrypted"));
+        }
+        match key.algorithm() {
+            Algorithm::Ed25519
+            | Algorithm::Ecdsa {
+                curve: EcdsaCurve::NistP256,
+            } => Ok(Self { key, comment }),
+            _ => Err(VaultError::Invalid(
+                "this key type cannot be used by the agent",
+            )),
+        }
+    }
+
+    /// The decoded private key (to hand to the agent).
+    pub fn private_key(&self) -> &PrivateKey {
+        &self.key
     }
 
     /// The SSH wire encoding of the public key (the agent's identity blob).

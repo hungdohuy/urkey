@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [open_container, parse_secret_keys, decode_params_and_padding]
+        target: [open_container, parse_secret_keys, decode_params_and_padding, agent_request]
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install nightly --profile minimal

@@ -10,6 +10,7 @@ cargo-fuzz = true
 
 [dependencies]
 crypto-core = { path = ".." }
+ssh-agent = { path = "../../ssh-agent" }
 libfuzzer-sys = "0.4.13"
 
 # Not part of the main workspace: needs nightly and cargo-fuzz.
@@ -32,6 +33,13 @@ bench = false
 [[bin]]
 name = "decode_params_and_padding"
 path = "fuzz_targets/decode_params_and_padding.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "agent_request"
+path = "fuzz_targets/agent_request.rs"
 test = false
 doc = false
 bench = false

@@ -12,4 +12,6 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
+nix = { version = "0.31.4", default-features = false, features = ["socket", "user", "fs"] }
+thiserror = "2.0.21"
 vault-core.workspace = true
