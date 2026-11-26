@@ -6,7 +6,8 @@ apps/web/src/wasm/
 # Dependencies
 node_modules/
 
-# Wrangler local state and secrets — never commit (CLAUDE.md security rules)
+# Cloudflare (cf) build output, local state and secrets — never commit (CLAUDE.md security rules)
+.cloudflare/
 .wrangler/
 .dev.vars
 .dev.vars.*

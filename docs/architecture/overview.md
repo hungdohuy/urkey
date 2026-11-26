@@ -50,7 +50,7 @@ flowchart LR
 | `vault-core` | `crates/vault-core` | Rust | Item model and validation, item encryption via `crypto-core`, TOTP, password generator, SSH key parsing, search index of the unlocked vault. |
 | `sync-core` | `crates/sync-core` | Rust | Sync state machine: local change queue, pull/push, conflict detection, tombstones, schema upgrades. Storage and HTTP are injected traits. |
 | `wasm-bindings` | `crates/wasm-bindings` | Rust → WASM | Narrow handle-based API for the web app (§5). |
-| `cli` | `crates/cli` | Rust | `urkey` command; native storage (encrypted file cache) and HTTP for `sync-core`. |
+| `cli` | `crates/cli` | Rust | `urk` command; native storage (encrypted file cache) and HTTP for `sync-core`. |
 | `ssh-agent` | `crates/ssh-agent` | Rust | Agent protocol server on a Unix socket; signs with keys from the unlocked vault. Run by launchd. |
 | `web` | `apps/web` | React + TS (Vite) | UI, IndexedDB storage adapter, service worker. Calls the core only through `wasm-bindings`. |
 | `api` | `cloud/workers/api` | TypeScript Worker | Auth challenges, device registry, sync endpoints, D1/R2 access. Does no vault cryptography; only verifies Ed25519 signatures. |
@@ -198,9 +198,9 @@ new DEKs and re-wraps both envelopes, uploaded as one versioned "rekey" operatio
 - Full protocol: [`sync.md`](sync.md).
 
 ### 7.7 SSH agent (macOS)
-`urkey agent` runs under launchd and listens on a socket the user points `SSH_AUTH_SOCK` at.
-It holds no keys until `urkey unlock`; then it decrypts SSH items into locked, zeroized memory.
-`urkey lock` or the idle timeout unloads them. Per-use confirmation arrives with the V1.1
+`urk agent` runs under launchd and listens on a socket the user points `SSH_AUTH_SOCK` at.
+It holds no keys until `urk unlock`; then it decrypts SSH items into locked, zeroized memory.
+`urk lock` or the idle timeout unloads them. Per-use confirmation arrives with the V1.1
 native app.
 
 ## 8. Cloudflare deployment
@@ -240,11 +240,12 @@ rust-toolchain.toml       pinned toolchain + wasm32 target
 | Interop | Shared JSON vectors in `tests/fixtures` | Native Rust ↔ WASM produce identical outputs. |
 | Worker | Vitest + `@cloudflare/vitest-pool-workers` | API, D1 migrations, idempotency, conflicts. |
 | Web | Vitest + Testing Library; Playwright | Components, a11y (axe), full flows. |
-| End-to-end | Playwright + CLI against local `wrangler dev` | Two devices sync, recovery, revocation. |
+| End-to-end | Playwright + CLI against local `cf dev` | Two devices sync, recovery, revocation. |
 
 ## 11. Decisions
 
-D-1 to D-18 were accepted by the owner on 2026-11-26 ("use your recommendations").
+D-1 to D-18 were accepted by the owner on 2026-11-26 ("use your recommendations"); D-19 and D-20
+were requested by the owner the same day.
 ADR files are in `docs/decisions/`.
 
 | ID | Decision | Choice | Status | ADR |
@@ -267,5 +268,7 @@ ADR files are in `docs/decisions/`.
 | D-16 | Web UI building blocks | Radix UI primitives + CSS Modules with CSS-variable tokens + bundled Lucide icons; system fonts | Accepted | 0012 |
 | D-17 | Where the WASM core runs in the browser | A dedicated Web Worker; the UI gets display data only | Accepted | 0013 |
 | D-18 | Emergency Kit format | Locally rendered printable page + text download; no PDF library | Accepted | ux/screens.md |
+| D-19 | Cloudflare tooling | `cf` CLI with the Vite bundler; no Wrangler | Accepted | 0014 |
+| D-20 | CLI binary name | `urk` | Accepted | 0015 |
 
 ADR 0001 records the overall technology stack from the brief.

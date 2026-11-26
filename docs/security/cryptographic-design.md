@@ -330,7 +330,7 @@ A stolen session token alone cannot change keys or revoke devices.
 
 ### 8.2 macOS (CLI / agent)
 - `ASK` and the device private key are Keychain generic-password items with
-  `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, accessible only to the signed `urkey` binary.
+  `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, accessible only to the signed `urk` binary.
 - The encrypted vault cache lives in `~/Library/Application Support/urkey/` with mode 0700.
 
 ### 8.3 In-memory secrets

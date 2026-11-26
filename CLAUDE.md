@@ -76,9 +76,9 @@ crates/crypto-core/    KDF, AEAD, envelopes — no I/O, no workspace deps
 crates/vault-core/     items, TOTP, generator, SSH key parsing
 crates/sync-core/      sync state machine (storage/HTTP injected)
 crates/wasm-bindings/  narrow WASM API for apps/web
-crates/cli/            `urkey` binary
+crates/cli/            `urk` binary (package `urkey-cli`)
 crates/ssh-agent/      agent protocol server
-cloud/workers/api/     Cloudflare Worker + D1 migrations
+cloud/workers/api/     Cloudflare Worker (cloudflare.config.ts) + D1 migrations
 docs/                  requirements, architecture, security, decisions, ux
 tests/fixtures/        generated test vectors
 tests/integration/     cross-component tests
@@ -93,7 +93,13 @@ Dependency direction: `crypto-core` ← `vault-core` ← `sync-core` ← {`wasm-
   bump both together.
 - `wasm-pack 0.15.1`. `wasm-opt` comes from the system `binaryen` package (GitHub release
   downloads are blocked in the cloud environment).
-- Node 22, pnpm (workspace), `wrangler@4`. `WRANGLER_SEND_METRICS=false`.
+- Node 22, pnpm (workspace).
+- Cloudflare tooling is the **`cf` CLI** (`cf@1.0.0-rc.6`, a project dev dependency of
+  `cloud/workers/api`) with the Vite bundler (`@cloudflare/vite-plugin` 2.0). **Do not use or
+  install Wrangler** and do not add a Wrangler config file (ADR 0014). Worker config lives in
+  `cloud/workers/api/cloudflare.config.ts`. Telemetry off: `CF_SEND_TELEMETRY=false`.
+- Before running an unfamiliar `cf` command: `cf cli search "<task>"`, then `--help`, and
+  `--dry-run` where available.
 - `cargo-deny` for advisories and licenses.
 
 ## Commands
@@ -118,11 +124,14 @@ pnpm -r typecheck
 pnpm -r test
 pnpm --filter web build
 pnpm audit --prod
-pnpm --filter api dev        # wrangler dev on :8787, local D1; GET /v1/health
-pnpm --filter api migrate:local
+pnpm --filter api dev            # cf dev on :8787, local D1; GET /v1/health
+pnpm --filter api build          # cf build
+pnpm --filter api migrate:local  # cf d1 migrations apply <local id> --local
+cargo run -p urkey-cli -- --version   # the `urk` binary
 ```
 
-Never run `wrangler deploy` or remote D1/R2 commands unless the owner asks for it in the
+Never run `cf deploy` (other than `cf deploy --dry-run`), `cf auth login`, or remote D1/R2
+commands (anything without `--local`) unless the owner asks for it in the
 current task.
 
 ## Conventions

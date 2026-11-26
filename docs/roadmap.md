@@ -32,7 +32,7 @@ P4 only for CLI sync.
 - ADR files 0001–0013 (decision index in `decisions/README.md`).
 - Scaffolding with no cryptography: Cargo workspace with empty crates, `rust-toolchain.toml`,
   pnpm workspace, `apps/web` (Vite + React + TS strict, tokens file, empty shell), `cloud/workers/api`
-  (Worker with `/v1/health`, D1 migration folder, Vitest pool), `deny.toml`, lint configs.
+  (Worker with `/v1/health`, D1 migration folder, Workers Vitest integration; managed with the `cf` CLI), `deny.toml`, lint configs.
 - CI (GitHub Actions): `cargo fmt --check`, `clippy -D warnings`, `cargo test`, `cargo deny check`,
   WASM build, `pnpm lint/typecheck/test/build`.
 
@@ -116,14 +116,14 @@ rotation, VMK rotation, device-removal-then-rotate flow, security events and not
 
 ## P6 — CLI and SSH agent (macOS)
 
-**Deliverables:** `urkey` CLI (R-SSH-4 commands), SQLite cache, Keychain storage, `ssh-agent`
+**Deliverables:** `urk` CLI (R-SSH-4 commands), SQLite cache, Keychain storage, `ssh-agent`
 daemon with launchd plist and setup command, CLI sync.
 
 **Acceptance**
 - R-SSH-1…4 pass; agent-protocol crate chosen by ADR.
 - `ssh -T` against a local test `sshd` using `SSH_AUTH_SOCK` works for Ed25519 and ECDSA keys;
   works with `git` over SSH.
-- After `urkey lock` / idle timeout, `ssh-add -l` lists no identities and signing fails.
+- After `urk lock` / idle timeout, `ssh-add -l` lists no identities and signing fails.
 - Socket permissions 0600 in a 0700 directory; peer-uid check rejects another user (T-18).
 - CLI and web interoperate on the same account (create on web, sign on CLI, and vice versa).
 
@@ -131,7 +131,7 @@ daemon with launchd plist and setup command, CLI sync.
 
 **Deliverables:** strict CSP and security headers, separate app/API hosts and deploy tokens,
 reproducible web build with published hashes, service-worker bundle pinning, encrypted export
-and R2 snapshots, deployment to Cloudflare (needs `CLOUDFLARE_API_TOKEN` — requested at this
+and R2 snapshots, deployment to Cloudflare with `cf deploy` (needs `CLOUDFLARE_API_TOKEN` — requested at this
 point), threat-model and docs refresh, external review.
 
 **Acceptance**

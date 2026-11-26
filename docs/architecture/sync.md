@@ -278,5 +278,5 @@ or integrity notices), `error` (with retry), `update required`, `signed out / re
    `410` after purge, `426`, revoked-device `401`, rekey `409`.
 3. **Integrity tests**: server returns swapped, rolled-back or forged records → client quarantines
    and warns.
-4. **End-to-end**: two browsers (Playwright) + CLI against local `wrangler dev`: offline edits on
+4. **End-to-end**: two browsers (Playwright) + CLI against local `cf dev`: offline edits on
    both, reconnect, resolve a conflict.

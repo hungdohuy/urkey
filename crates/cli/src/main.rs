@@ -1,16 +1,16 @@
-//! `urkey` command-line interface (requirements R-SSH-4).
+//! `urk` — the urkey command-line interface (requirements R-SSH-4).
 //!
 //! Only `--version` and `--help` exist until roadmap P6.
 
 use std::io::{self, Write};
 use std::process::ExitCode;
 
-const USAGE: &str = "urkey — personal password manager CLI\n\nUSAGE:\n    urkey [--version | --help]\n\nVault and SSH agent commands arrive in a later phase.\n";
+const USAGE: &str = "urk — urkey password manager CLI\n\nUSAGE:\n    urk [--version | --help]\n\nVault and SSH agent commands arrive in a later phase.\n";
 
 fn run(args: &[String], out: &mut impl Write) -> io::Result<ExitCode> {
     match args.first().map(String::as_str) {
         Some("--version" | "-V") => {
-            writeln!(out, "urkey {}", env!("CARGO_PKG_VERSION"))?;
+            writeln!(out, "urk {}", env!("CARGO_PKG_VERSION"))?;
             Ok(ExitCode::SUCCESS)
         }
         None | Some("--help" | "-h") => {
@@ -44,13 +44,13 @@ mod tests {
     fn prints_version() {
         let (code, out) = output(&["--version"]);
         assert_eq!(code, ExitCode::SUCCESS);
-        assert_eq!(out, format!("urkey {}\n", env!("CARGO_PKG_VERSION")));
+        assert_eq!(out, format!("urk {}\n", env!("CARGO_PKG_VERSION")));
     }
 
     #[test]
     fn unknown_argument_prints_usage_and_fails() {
         let (code, out) = output(&["frobnicate"]);
         assert_eq!(code, ExitCode::from(2));
-        assert!(out.starts_with("urkey —"));
+        assert!(out.starts_with("urk —"));
     }
 }

@@ -1,6 +1,6 @@
 # 0007. macOS V1 scope: Rust CLI and launchd SSH agent
 
-- Status: Accepted
+- Status: Accepted (binary name amended by 0015)
 - Date: 2026-11-26
 - Decision: D-6
 - Requirements: R-SSH-1…4
@@ -9,7 +9,7 @@
 The brief asks for a macOS companion where native integration is required. The SSH agent is the only V1 feature that needs it.
 
 ## Decision
-V1 ships a Rust CLI (`urkey`) and an SSH agent run by launchd, with Keychain storage. A native
+V1 ships a Rust CLI (`urk`, see 0015) and an SSH agent run by launchd, with Keychain storage. A native
 app (Touch ID unlock, per-use signing confirmation) is V1.1.
 
 ## Alternatives considered

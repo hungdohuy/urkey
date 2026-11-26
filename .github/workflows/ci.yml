@@ -14,7 +14,7 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  WRANGLER_SEND_METRICS: "false"
+  CF_SEND_TELEMETRY: "false"
 
 jobs:
   rust:
@@ -67,5 +67,6 @@ jobs:
       - run: pnpm -r typecheck
       - run: pnpm -r test
       - run: pnpm --filter web build
+      - run: pnpm --filter api build
       - name: Audit npm dependencies
         run: pnpm audit --prod
