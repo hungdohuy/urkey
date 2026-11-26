@@ -139,7 +139,7 @@ threat model.
 **Local storage:** IndexedDB (web) or an app-data directory (CLI) holds the same encrypted
 records plus the Secret Key. Storage of the Secret Key per platform is decision D-5.
 
-Item and envelope schemas live in `docs/architecture/data-model.md` (to be written).
+Item and envelope schemas: [`data-model.md`](data-model.md).
 
 ## 7. Key flows
 
@@ -195,7 +195,7 @@ new DEKs and re-wraps both envelopes, uploaded as one versioned "rekey" operatio
   the user to choose. No field-level merge in V1.
 - **Staleness:** if `since` is older than tombstone retention (90 days), the client does a full
   resync. The API rejects clients below `min_client_version`.
-- Full protocol: `docs/architecture/sync.md` (to be written).
+- Full protocol: [`sync.md`](sync.md).
 
 ### 7.7 SSH agent (macOS)
 `urkey agent` runs under launchd and listens on a socket the user points `SSH_AUTH_SOCK` at.
@@ -242,21 +242,27 @@ rust-toolchain.toml       pinned toolchain + wasm32 target
 | Web | Vitest + Testing Library; Playwright | Components, a11y (axe), full flows. |
 | End-to-end | Playwright + CLI against local `wrangler dev` | Two devices sync, recovery, revocation. |
 
-## 11. Decisions (proposed defaults — need owner approval)
+## 11. Decisions
 
-| ID | Decision | Proposed default | ADR |
-|----|----------|------------------|-----|
-| D-1 | PWA code-delivery risk | Accept, mitigate (§7.1), document | 0002 |
-| D-2 | Account authentication | Ed25519 key derived from password + Secret Key (challenge/response). OPAQUE was considered; the 128-bit Secret Key already defeats offline guessing from a server dump, and this is simpler. | 0003 |
-| D-3 | AEAD | XChaCha20-Poly1305 | 0004 |
-| D-4 | VMK rotation in V1 | Yes | 0005 |
-| D-5 | Secret Key storage on device | Web: wrapped by a non-extractable WebCrypto key in IndexedDB. macOS: Keychain. | 0006 |
-| D-6 | macOS V1 scope | Rust CLI + launchd agent; native app in V1.1 | 0007 |
-| D-7 | RSA signing in SSH agent | Not in V1 | 0008 |
-| D-8 | Item ciphertext location | D1 rows (padded); R2 for snapshots only | 0009 |
-| D-9 | Worker routing | Hono (small, typed) vs. hand-written router — prefer hand-written unless routes grow | 0010 |
-| D-10 | Argon2id params | 64 MiB / t=3 / p=1 pending benchmark on iPhone PWA | crypto spec |
-| D-11 | Optional recovery delay (threat model T-12) | Not in V1; reconsider for V1.1 | crypto spec Q-3 |
-| D-12 | New Recovery Key on every VMK rotation | Yes (the unlocked client does not hold the RK) | crypto spec Q-2 |
+D-1 to D-12 were accepted by the owner on 2026-11-26 ("use your recommendations").
+Accepted decisions still need their ADR files written; D-13 onward are proposals.
+
+| ID | Decision | Choice | Status | ADR |
+|----|----------|--------|--------|-----|
+| D-1 | PWA code-delivery risk | Accept, mitigate (§7.1), document | Accepted | 0002 |
+| D-2 | Account authentication | Ed25519 key derived from password + Secret Key (challenge/response). OPAQUE was considered; the 128-bit Secret Key already defeats offline guessing from a server dump, and this is simpler. | Accepted | 0003 |
+| D-3 | AEAD | XChaCha20-Poly1305 | Accepted | 0004 |
+| D-4 | VMK rotation in V1 | Yes | Accepted | 0005 |
+| D-5 | Secret Key storage on device | Web: wrapped by a non-extractable WebCrypto key in IndexedDB. macOS: Keychain. | Accepted | 0006 |
+| D-6 | macOS V1 scope | Rust CLI + launchd agent; native app in V1.1 | Accepted | 0007 |
+| D-7 | RSA signing in SSH agent | Not in V1 | Accepted | 0008 |
+| D-8 | Item ciphertext location | D1 rows (padded); R2 for snapshots only | Accepted | 0009 |
+| D-9 | Worker routing | Hand-written router; revisit (e.g. Hono) only if routes grow | Accepted | 0010 |
+| D-10 | Argon2id params | 64 MiB / t=3 / p=1, floor 32 MiB / t=2; confirm with iPhone PWA benchmark | Accepted, benchmark pending | crypto spec |
+| D-11 | Optional recovery delay (threat model T-12) | Not in V1; reconsider for V1.1 | Accepted | crypto spec |
+| D-12 | New Recovery Key on every VMK rotation | Yes (the unlocked client does not hold the RK) | Accepted | crypto spec |
+| D-13 | CLI local store | SQLite via `rusqlite` (bundled); contents are ciphertext only | Proposed | 0011 |
+| D-14 | When clients sync | Only while unlocked in V1 (pulled records are verified immediately) | Proposed | sync.md |
+| D-15 | Server write serialization | Conditional write + sequence bump in one D1 batch; fall back to one Durable Object per account if concurrency tests fail | Proposed | sync.md |
 
 ADR 0001 records the overall technology stack from the brief.

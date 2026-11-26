@@ -18,7 +18,9 @@ When the phase changes, the owner will update this section.
 |----------|---------|
 | `docs/requirements/product-brief.md` | Original brief (do not edit). |
 | `docs/requirements/v1.md` | Numbered requirements (R-*), adjustments to the brief, acceptance criteria. Wins over the brief. |
-| `docs/architecture/overview.md` | Components, key hierarchy, flows, open decisions (D-*). |
+| `docs/architecture/overview.md` | Components, key hierarchy, flows, decisions (D-*). |
+| `docs/architecture/data-model.md` | Item plaintext schema, records, D1 tables, local stores. |
+| `docs/architecture/sync.md` | Sync protocol, conflicts, idempotency, special situations. |
 | `docs/security/` | Threat model, crypto design, recovery, devices. |
 | `docs/decisions/` | ADRs. Accepted ADRs are binding. |
 | `docs/ux/` | Design principles and screen/component map. |

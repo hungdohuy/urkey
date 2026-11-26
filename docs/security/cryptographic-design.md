@@ -1,7 +1,8 @@
 # Cryptographic Design (v1)
 
-Status: **Draft — NOT approved. Do not implement until the owner approves and the review
-gate in `docs/requirements/v1.md` (A14) is planned.**
+Status: **Draft — NOT approved for implementation.** The owner accepted the design decisions
+(D-1 to D-12) on 2026-11-26; the specification itself still needs the review in §13 before
+production cryptography is implemented.
 
 Related: [`threat-model.md`](threat-model.md), [`../architecture/overview.md`](../architecture/overview.md) §4–§7.
 
@@ -411,9 +412,9 @@ Before real credentials are stored, a reviewer must check at least:
 
 ## 14. Open questions
 
-| ID | Question | Proposed default |
-|----|----------|------------------|
-| Q-1 | Argon2id params after iPhone PWA benchmark (D-10) | 64 MiB / t=3 / p=1, floor 32 MiB / t=2 |
-| Q-2 | Generate a new Recovery Key on every VMK rotation? | Yes (§7.10) |
-| Q-3 | Optional recovery delay (e.g. 48 h, cancellable from an enrolled device) — see threat model T-12 | Not in v1; reconsider for v1.1 |
-| Q-4 | Agent-protocol crate choice | Decide in the dependency-review ADR |
+| ID | Question | Resolution |
+|----|----------|------------|
+| Q-1 | Argon2id params (D-10) | Accepted: 64 MiB / t=3 / p=1, floor 32 MiB / t=2. Still to confirm with an iPhone PWA benchmark. |
+| Q-2 | New Recovery Key on every VMK rotation? | Accepted: yes (D-12, §7.10) |
+| Q-3 | Optional recovery delay (threat model T-12) | Accepted: not in v1 (D-11) |
+| Q-4 | Agent-protocol crate choice | Open: decide in the dependency-review ADR |
