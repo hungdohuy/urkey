@@ -62,16 +62,27 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack@0.15.1,wasm-bindgen-cli@0.2.130
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq binaryen
+      # wasm-opt is disabled for wasm-bindings (Cargo.toml metadata): binaryen 108 breaks the
+      # reference-type tables emitted by wasm-bindgen 0.2.130.
       - run: wasm-pack build crates/wasm-bindings --target web --release --out-dir ../../apps/web/src/wasm
       - name: Test vectors inside WASM (Node) + Argon2id timing
         run: wasm-pack test --node crates/crypto-core --features test-vectors --test wasm -- --nocapture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm-pkg
+          path: apps/web/src/wasm
+          retention-days: 3
 
   web:
     name: Web + Worker (lint, typecheck, test, build)
+    needs: wasm
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: wasm-pkg
+          path: apps/web/src/wasm
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -82,6 +93,71 @@ jobs:
       - run: pnpm -r typecheck
       - run: pnpm -r test
       - run: pnpm --filter web build
+      - name: Reproducible web build (R-SEC-11)
+        run: |
+          out=apps/web/.cloudflare/output/v1/workers/default/assets/release.json
+          first=$(cat "$out")
+          rm -rf apps/web/.cloudflare/output
+          pnpm --filter web build
+          second=$(cat "$out")
+          echo "$second"
+          [ "$first" = "$second" ] || { echo "release hash differs between two builds"; exit 1; }
       - run: pnpm --filter api build
+      - name: Deploy dry runs (no credentials; nothing is deployed)
+        run: |
+          (cd cloud/workers/api && pnpm exec cf deploy --dry-run)
+          (cd apps/web && pnpm exec cf deploy --dry-run)
       - name: Audit npm dependencies
         run: pnpm audit --prod
+
+  e2e:
+    name: End-to-end (CLI + agent + sshd, browser dev + production)
+    needs: wasm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: wasm-pkg
+          path: apps/web/src/wasm
+      - name: Install pinned toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: OpenSSH client and server
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq openssh-client openssh-server
+          sudo mkdir -p /run/sshd
+          # sshd (UsePAM no) refuses public-key logins for accounts with a locked password.
+          sudo usermod -p '*' "$USER"
+      - run: pnpm install --frozen-lockfile
+      - name: CLI + SSH agent end to end (cf dev, local D1, real sshd)
+        run: tests/integration/cli_e2e.sh
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - name: Browser end to end (dev server and production build)
+        run: pnpm --filter web e2e
+        env:
+          CI: "1"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: apps/web/test-results
+          retention-days: 7
+
+  macos:
+    name: macOS (CLI, agent, Keychain build)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy -p urkey-cli -p ssh-agent --all-targets -- -D warnings
+      - run: cargo test -p vault-core -p sync-core -p ssh-agent -p urkey-cli
+      - run: cargo build --release -p urkey-cli
+      - run: ./target/release/urk --version
