@@ -80,17 +80,18 @@ stop_all() {
 trap stop_all EXIT
 trap 'exit 130' INT TERM
 
-# Node must satisfy package.json "engines" (.npmrc has engine-strict=true; jsdom needs this range).
-NODE_RANGE="22.22.2+ (Node 22), 24.15.0+ (Node 24) or 26+"
+# Node must satisfy package.json "engines" (.npmrc has engine-strict=true). The tightest
+# dependency is the `cf` CLI: ^22.23.0 || ^24.22.0 || ^26.12.0.
+NODE_RANGE="22.23.0+ (Node 22), 24.22.0+ (Node 24) or 26.12.0+ (Node 26)"
 need_node() {
   have node || die "Node.js is missing. Install Node 22 LTS (see .nvmrc), e.g. 'nvm install' or 'brew install node@22'."
   local v major minor patch
   v=$(node --version | sed 's/^v//')
   IFS=. read -r major minor patch <<<"$v"
   local okv=0
-  if ((major == 22)) && ((minor > 22 || (minor == 22 && patch >= 2))); then okv=1
-  elif ((major == 24)) && ((minor >= 15)); then okv=1
-  elif ((major >= 26)); then okv=1
+  if ((major == 22)) && ((minor >= 23)); then okv=1
+  elif ((major == 24)) && ((minor >= 22)); then okv=1
+  elif ((major == 26)) && ((minor >= 12)); then okv=1
   fi
   ((okv)) || die "Node $v is too old for this repo; need $NODE_RANGE.
   Fix one of:

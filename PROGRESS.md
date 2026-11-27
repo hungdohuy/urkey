@@ -44,6 +44,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | O-11 | Update the phase section in `CLAUDE.md` (it still says P2–P7) | You own that section | `CLAUDE.md` |
 | O-12 | Check layouts on a real phone and tablet (Playwright covers desktop Chrome) | R-UX-1 | `docs/ux/screens.md` §8 |
 | O-13 | Decide the 2026-11-27 zero-knowledge review findings: M-1 (account creation reveals registered emails: accept, or add email verification) and M-2 (check whether Cloudflare logs record the Authorization header, before deploying) | Review follow-up (L-1, L-2 fixed) | `docs/security/reviews/2026-11-27-zero-knowledge-review.md` |
+| O-14 | Decide what "resume syncing" after a rollback warning should do. Today it only clears the flag, and the next pull raises it again, so a device stays paused after a real server rollback (e.g. restoring an older self-hosted backup). Proposed: accept the server's state (reset the highest seen `vault_seq`, full resync) and keep local-only items as conflicts, not deletions | Sync-spec gap found while testing backup/restore | `docs/architecture/sync.md` §7, `docs/operations/selfhost.md` |
 
 ## Phases
 
@@ -150,6 +151,12 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-27 (f)** — Self-hosting with Docker Compose (ADR 0018).
+  - Setup: `compose.yaml`; Caddy plus the Worker in workerd via Miniflare, D1 in a volume; dev tooling off, API reachable only via Caddy.
+  - Tested here: image build, all 14 browser tests against the stack, restart persistence, backup/restore.
+  - Fixed the declared Node range: `cf` needs ^22.23/^24.22/^26.12.
+  - Found a sync gap (O-14): "resume syncing" can't clear a real rollback.
 
 - **2026-11-27 (e)** — Fixed review L-1 (WASM secret arguments wiped; the new Secret Key returned as wipeable
   bytes; the extra WebCrypto copy wiped; new e2e test for Secret Key rotation) and L-2 (CLI session token in

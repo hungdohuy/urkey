@@ -1,0 +1,2 @@
+# Certificates from Caddy's local CA (LAN names). Trust its root on your devices.
+tls internal

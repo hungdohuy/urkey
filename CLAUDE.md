@@ -84,7 +84,8 @@ crates/sync-core/      sync state machine (storage/HTTP injected)
 crates/wasm-bindings/  narrow WASM API for apps/web
 crates/cli/            `urk` binary (package `urkey-cli`)
 crates/ssh-agent/      agent protocol server
-cloud/workers/api/     Cloudflare Worker (cloudflare.config.ts) + D1 migrations
+cloud/workers/api/     Cloudflare Worker (cloudflare.config.ts) + D1 migrations; selfhost/ server
+deploy/selfhost/       Dockerfile, Caddyfile, TLS override for compose.yaml (self-hosting)
 docs/                  requirements, architecture, security, decisions, ux
 tests/fixtures/        generated test vectors
 tests/integration/     cross-component tests
@@ -99,7 +100,8 @@ Dependency direction: `crypto-core` ← `vault-core` ← `sync-core` ← {`wasm-
   bump both together.
 - `wasm-pack 0.15.1`. `wasm-opt` is **disabled** for `wasm-bindings` (Cargo.toml metadata):
   binaryen 108 breaks the reference-type tables of wasm-bindgen 0.2.130 in browsers.
-- Node 22.22.2+ (pinned in `.nvmrc`; 24.15+ and 26+ also work: `package.json` engines, enforced by `engine-strict`), pnpm (workspace).
+- Node 22.23+ (pinned in `.nvmrc`; 24.22+ and 26.12+ also work). The range is in `package.json`
+  engines, enforced by `engine-strict`; the `cf` CLI sets the lower bounds. pnpm workspace.
 - Cloudflare tooling is the **`cf` CLI** (`cf@1.0.0-rc.6`, a project dev dependency of
   `cloud/workers/api`) with the Vite bundler (`@cloudflare/vite-plugin` 2.0). **Do not use or
   install Wrangler** and do not add a Wrangler config file (ADR 0014). Worker config lives in
@@ -142,6 +144,10 @@ pnpm --filter api dev            # cf dev on :8787, local D1; GET /v1/health
 pnpm --filter api build          # cf build
 pnpm --filter api migrate:local  # cf d1 migrations apply <local id> --local
 cargo run -p urkey-cli -- --version   # the `urk` binary
+
+# Self-hosting (ADR 0018, docs/operations/selfhost.md)
+docker compose up -d --build                 # Caddy on :8080 (app) / :8787 (API), API in workerd, D1 in a volume
+URKEY_E2E_APP_URL=http://localhost:8080 pnpm --filter web exec playwright test --trace off   # e2e against it
 
 # End to end (need OpenSSH client + server; Playwright uses the preinstalled Chromium)
 tests/integration/cli_e2e.sh                 # cf dev + two urk devices + agent + sshd + export/restore

@@ -63,4 +63,11 @@ export default tseslint.config(
     ...tseslint.configs.disableTypeChecked,
     languageOptions: { globals: globals.node },
   },
+  {
+    // Plain Node scripts outside any TS project (the self-host server): no type-aware parsing;
+    // the security rules above (no-console, no Math.random) still apply.
+    files: ["**/selfhost/**/*.mjs"],
+    ...tseslint.configs.disableTypeChecked,
+    languageOptions: { globals: globals.node, parserOptions: { projectService: false } },
+  },
 );

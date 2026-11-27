@@ -10,7 +10,11 @@
     "test": "vitest run",
     "migrate:local": "cf d1 migrations apply 00000000-0000-4000-8000-000000000001 --local --dir migrations",
     "setup:dev": "node -e \"const fs=require('fs');if(!fs.existsSync('.dev.vars'))fs.writeFileSync('.dev.vars','PRELOGIN_SECRET='+require('crypto').randomBytes(32).toString('hex')+'\\\\n',{mode:0o600})\" && pnpm migrate:local",
-    "e2e:server": "rm -rf .cloudflare/state && pnpm setup:dev && cf dev --port 8787"
+    "e2e:server": "rm -rf .cloudflare/state && pnpm setup:dev && cf dev --port 8787",
+    "selfhost": "cf build && node selfhost/server.mjs"
+  },
+  "dependencies": {
+    "miniflare": "5.20261123.1-beta"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "2.0.0-rc.5",

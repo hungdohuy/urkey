@@ -1,0 +1,32 @@
+# urkey self-hosted front end (ADR 0018). Caddy is the only public entry point:
+# - the app origin serves the static web build with the same headers as on Cloudflare;
+# - the API origin forwards only /v1/* to the API container (no /cdn-cgi/*, no dev tooling).
+# Origins come from URKEY_APP_ORIGIN / URKEY_API_ORIGIN. An http://localhost:PORT origin is served
+# without TLS (localhost is a secure context). An https:// origin gets automatic HTTPS: ACME for
+# public names, or Caddy's local CA with URKEY_TLS_MODE=internal.
+{
+	admin off
+	# No upstream proxies are trusted: X-Forwarded-For sent by a client is replaced with the
+	# real peer address before it reaches the API (rate limits use it).
+}
+
+{$URKEY_APP_ORIGIN} {
+	import /etc/caddy/tls-{$URKEY_TLS_MODE:auto}.caddy
+	root * /srv
+	import /etc/caddy/headers.caddy
+	header -Server
+	try_files {path} /index.html
+	file_server
+}
+
+{$URKEY_API_ORIGIN} {
+	import /etc/caddy/tls-{$URKEY_TLS_MODE:auto}.caddy
+	header -Server
+	@api path /v1/*
+	handle @api {
+		reverse_proxy api:8787
+	}
+	handle {
+		respond `{"error":"not_found"}` 404
+	}
+}

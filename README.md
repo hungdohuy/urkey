@@ -50,5 +50,9 @@ scripts/dev.sh check      # everything CI runs
 
 Toolchain details and individual commands: [`CLAUDE.md`](CLAUDE.md#commands).
 
-Deployment: [`docs/operations/deploy.md`](docs/operations/deploy.md). Only the owner deploys, with
-their own Cloudflare credentials.
+Deployment, either way:
+- **Cloudflare:** [`docs/operations/deploy.md`](docs/operations/deploy.md). Only the owner
+  deploys, with their own Cloudflare credentials.
+- **Self-hosted with Docker Compose:** `docker compose up -d --build`, then open
+  http://localhost:8080. See [`docs/operations/selfhost.md`](docs/operations/selfhost.md) for
+  HTTPS on other devices, backups and updates (ADR 0018).

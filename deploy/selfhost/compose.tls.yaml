@@ -1,0 +1,11 @@
+# HTTPS on real hostnames, for use from other devices (phones need HTTPS for the PWA).
+#   docker compose -f compose.yaml -f deploy/selfhost/compose.tls.yaml up -d --build
+# Set in .env: URKEY_APP_ORIGIN=https://app.example.com, URKEY_API_ORIGIN=https://api.example.com
+# Public names get certificates from Let's Encrypt (ports 80 and 443 must be reachable). For LAN
+# names, set URKEY_TLS_MODE=internal and trust Caddy's root certificate on your devices
+# (see docs/operations/selfhost.md).
+services:
+  web:
+    ports: !override
+      - "${URKEY_BIND:-0.0.0.0}:80:80"
+      - "${URKEY_BIND:-0.0.0.0}:443:443"

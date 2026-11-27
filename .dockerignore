@@ -1,0 +1,18 @@
+# Build context for deploy/selfhost/Dockerfile: sources only, no local state or secrets.
+**/node_modules
+target
+**/.cloudflare
+**/test-results
+**/playwright-report
+apps/web/src/wasm
+apps/web/dist
+.git
+.github
+**/.dev.vars
+**/.env
+.env*
+!.env.example
+*.urkey-export
+crates/crypto-core/fuzz/target
+crates/crypto-core/fuzz/corpus
+crates/crypto-core/fuzz/artifacts

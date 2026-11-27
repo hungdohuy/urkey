@@ -1,0 +1,65 @@
+# urkey, self-hosted with Docker Compose (ADR 0018, docs/operations/selfhost.md).
+#
+#   cp deploy/selfhost/selfhost.env.example .env     # optional; the defaults run on localhost
+#   docker compose up -d --build
+#   open http://localhost:8080                        # the app; the API is http://localhost:8787
+#
+# Test data only until milestone M2 (independent security review).
+name: urkey
+
+x-build: &build
+  context: .
+  dockerfile: deploy/selfhost/Dockerfile
+  args:
+    URKEY_API_ORIGIN: ${URKEY_API_ORIGIN:-http://localhost:8787}
+
+services:
+  api:
+    build:
+      <<: *build
+      target: api
+    environment:
+      URKEY_API_ORIGIN: ${URKEY_API_ORIGIN:-http://localhost:8787}
+      URKEY_APP_ORIGIN: ${URKEY_APP_ORIGIN:-http://localhost:8080}
+      # Only Caddy can reach this container, and it always replaces X-Forwarded-For.
+      TRUST_PROXY: "1"
+    volumes:
+      - urkey-data:/data
+    # Not published: the API is reachable only through Caddy (web).
+    expose:
+      - "8787"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  web:
+    build:
+      <<: *build
+      target: web
+    environment:
+      URKEY_APP_ORIGIN: ${URKEY_APP_ORIGIN:-http://localhost:8080}
+      URKEY_API_ORIGIN: ${URKEY_API_ORIGIN:-http://localhost:8787}
+      URKEY_TLS_MODE: ${URKEY_TLS_MODE:-auto}
+    ports:
+      # Localhost only by default. For other devices use HTTPS: see compose.tls.yaml.
+      - "${URKEY_BIND:-127.0.0.1}:8080:8080"
+      - "${URKEY_BIND:-127.0.0.1}:8787:8787"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+volumes:
+  # Holds the D1 database (ciphertext and metadata only) and the prelogin secret. Back it up.
+  urkey-data:
+  caddy-data:
+  caddy-config:
