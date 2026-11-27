@@ -19,14 +19,6 @@ pub struct VaultKey {
     pub vmk: VaultMasterKey,
 }
 
-impl core::fmt::Debug for VaultKey {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("VaultKey")
-            .field("vmk_id", &self.vmk_id)
-            .finish_non_exhaustive()
-    }
-}
-
 /// One item's latest encrypted state.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemRecord {
@@ -55,14 +47,6 @@ pub struct Opened {
     pub item_key: ItemKey,
     /// The item, or `None` if the record is an authenticated tombstone.
     pub item: Option<Item>,
-}
-
-impl core::fmt::Debug for Opened {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Opened")
-            .field("deleted", &self.item.is_none())
-            .finish_non_exhaustive()
-    }
 }
 
 /// Opens and verifies a record (sync.md §7 steps 1–2). A record wrapped under another VMK

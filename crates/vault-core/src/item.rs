@@ -44,13 +44,6 @@ pub struct Item {
     pub extra: Map<String, Value>,
 }
 
-impl core::fmt::Debug for Item {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // Item content is secret; never print it.
-        f.write_str("Item([REDACTED])")
-    }
-}
-
 /// Type-specific content.
 #[derive(Clone, PartialEq)]
 pub enum Content {
@@ -534,16 +527,12 @@ mod tests {
     }
 
     #[test]
-    fn debug_is_redacted() {
-        assert_eq!(format!("{:?}", login()), "Item([REDACTED])");
-    }
-
-    #[test]
     fn invalid_json_errors_do_not_echo_content() {
         let err = Item::from_json(
             b"{\"schema\":1,\"type\":\"login\",\"title\":\"SECRET\",\"fields\":{\"password\":7}}",
         )
-        .unwrap_err();
+        .err()
+        .unwrap();
         assert!(!err.to_string().contains("SECRET"));
     }
 }

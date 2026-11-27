@@ -19,7 +19,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 ## Resume here (next steps, in order)
 
 1. **Owner:** review and decide the items in [Waiting on the owner](#waiting-on-the-owner),
-   starting with O-10 (ADR 0017) and O-1/O-2, then the code review (O-3).
+   starting with the code review (O-3).
 2. **Owner:** run the manual checklist `docs/operations/manual-test.md` with
    `./scripts/dev.sh dev` (section 5 on the Mac closes O-6; the phone-width check closes O-12).
    `setup` and `dev` were confirmed working on the owner's machine on 2026-11-27.
@@ -34,8 +34,6 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 
 | # | What | Why it matters | Where |
 |---|------|----------------|-------|
-| O-1 | Approve the Recovery Key display grouping (`…-XXXXC`) | Spec said "groups of 4"; display only | crypto spec §3.2, §15 |
-| O-2 | Accept a redacting `Debug` on secret types (roadmap P1 says "no `Debug`") | Decide which wording is binding | roadmap P1, `crypto-core/src/secret.rs` |
 | O-3 | Review the code (P1 crypto core first, then vault/sync/API/clients) | Every phase gate | roadmap |
 | O-4 | Measure unlock time on an iPhone PWA | Confirms Argon2id defaults (D-10) | crypto spec §4.2 |
 | O-5 | Decide snapshot DEK wrapping (Q-5) | Blocks R2 snapshots only; export does not need it (ADR 0017) | crypto spec §14 |
@@ -43,7 +41,6 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | O-7 | Turn on Remote Control on the Mac (or run Claude Code there) if you want help with O-6 | macOS testing | — |
 | O-8 | Deploy: domain, origins, Cloudflare token, D1, `PRELOGIN_SECRET` | P7 / M1 | `docs/operations/deploy.md` |
 | O-9 | Arrange the independent security review | Required before real credentials (M2) | crypto spec §13, threat model §6/§9a |
-| O-10 | Approve ADR 0017 (encrypted export = the account's own ciphertext, no new construction) | Spec change, crypto-adjacent | `docs/decisions/0017-…`, crypto spec §15 |
 | O-11 | Update the phase section in `CLAUDE.md` (it still says P2–P7) | You own that section | `CLAUDE.md` |
 | O-12 | Check layouts on a real phone and tablet (Playwright covers desktop Chrome) | R-UX-1 | `docs/ux/screens.md` §8 |
 
@@ -52,7 +49,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | Phase | Status | Notes |
 |-------|--------|-------|
 | P0 Foundation | ✅ | Docs, ADRs, scaffolding, CI |
-| P1 Crypto core | 🟡 | Done; gate needs O-1…O-4 |
+| P1 Crypto core | 🟡 | Done; O-1 and O-2 decided; gate needs O-3 (review) and O-4 (iPhone timing) |
 | P2 Local vault + web UI | 🟡 | Implemented and tested; gate needs O-3, O-12, the canary test |
 | P3 Server, auth, devices | 🟡 | Implemented; prelogin timing to measure on a deployed Worker |
 | P4 Sync | 🟡 | Implemented, 10,000-scenario simulation; D1 parallel-push stress test after deploy |
@@ -144,13 +141,19 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 
 ## Other open items
 
-- Spec changes pending owner approval are listed in the crypto spec §15 (O-1, O-10).
+- No spec changes are pending owner approval. Decided on 2026-11-27: O-1 (Recovery Key grouping) and
+  O-10 (ADR 0017, encrypted export) approved; O-2 decided as "no `Debug`" on secret types.
 - The `urkey` cloud environment could also install `openssh-server` for `cli_e2e.sh`. In this
   session it was already present.
 
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-27 (c)** — Owner decisions: O-1 and O-10 approved; O-2: secret types get no `Debug` at all.
+  Removed every `Debug` (manual and derived) from secret-holding types in crypto-core, vault-core,
+  sync-core and ssh-agent, fixed the tests that relied on it, and added the `assert_not_debug!` compile-time guard.
+  Also removed the product-brief 1Password wording at the owner's request (one-time exception).
 
 - **2026-11-27 (b)** — R-SEC-1 canary test (Playwright); R-ITEM-7 `urk item copy` with clearing after 90 s;
   R-REC-3: found and fixed a lost-response gap in all key changes (the client could discard a

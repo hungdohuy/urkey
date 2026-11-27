@@ -524,7 +524,9 @@ fn sealed_containers_open_with_the_typed_api() {
         let bytes = unhex(neg["container"].as_str().unwrap());
         let rev = neg["revision"].as_u64().unwrap();
         assert_eq!(
-            container::open_item(&item_key, a, ITEM, rev, &bytes).unwrap_err(),
+            container::open_item(&item_key, a, ITEM, rev, &bytes)
+                .err()
+                .unwrap(),
             CryptoError::Decrypt,
             "{}",
             neg["description"]

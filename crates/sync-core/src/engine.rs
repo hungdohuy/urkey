@@ -76,7 +76,6 @@ pub struct Effective {
 }
 
 /// A local change.
-#[derive(Debug)]
 pub enum Write<'a> {
     /// New item.
     Create(&'a Item),
@@ -612,12 +611,6 @@ struct SnapshotItem {
     local: Option<Item>,
     /// The item was already in conflict before the rotation.
     was_conflict: bool,
-}
-
-impl core::fmt::Debug for RotationSnapshot {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "RotationSnapshot({} items)", self.items.len())
-    }
 }
 
 /// Starts handling a VMK rotation done on another device (sync.md §8.4). Decrypts pending edits and

@@ -18,3 +18,11 @@ mod state;
 pub use engine::*;
 pub use state::*;
 pub use vault_core;
+
+/// Compile-time check that no secret-holding type has `Debug` (owner decision O-2).
+#[cfg(test)]
+mod no_debug {
+    use crate::engine::{RotationSnapshot, Write};
+
+    vault_core::crypto_core::assert_not_debug!(RotationSnapshot, Write<'static>);
+}

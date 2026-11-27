@@ -69,7 +69,7 @@ Argon2id benchmark in WASM.
 | Independent Python reproduction | Done: 102/102 checks (same author as the Rust code, see fixtures README) |
 | Fuzzing | Targets done, 60 s each locally with no findings; the 10-min nightly job is set up but has not run yet |
 | Negative tests | Done: every byte flip, truncation, extension, wrong revision, weak params |
-| Secret types | Redacting `Debug` (as `CLAUDE.md` allows), no `Display`/`Clone`, tested; `#![forbid(unsafe_code)]`. The wording "no `Debug`" above is stricter than `CLAUDE.md` — owner to confirm |
+| Secret types | No `Debug`, `Display` or `Clone`, enforced by a compile-time guard; `#![forbid(unsafe_code)]`. Owner decision O-2 (2026-11-27): "no `Debug`" is the binding wording |
 | Benchmark | Native 153 ms, WASM/Node 228–319 ms. **iPhone PWA: open** (needs a real device) |
 | Review gate part 1 | **Open:** owner review of the P1 diff |
 

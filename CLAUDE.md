@@ -53,8 +53,9 @@ Never silently change an accepted ADR — propose a superseding one.
 
 - Never log, print, panic with, or put in URLs/errors/notifications: master passwords, Secret
   Keys, Recovery Keys, VMKs, DEKs, KEKs, TOTP secrets, SSH private keys, or decrypted item content.
-  Secret-holding Rust types must not derive `Debug`/`Display` (implement a redacting `Debug`
-  if needed) and must use `zeroize`/`ZeroizeOnDrop`.
+  Secret-holding Rust types must not implement `Debug` or `Display` at all, not even a redacting
+  one (owner decision O-2, 2026-11-27), and must use `zeroize`/`ZeroizeOnDrop`. List new secret
+  types in the `assert_not_debug!` guard of their crate; it fails the build if one gains `Debug`.
 - No custom cryptographic primitives or constructions. Use RustCrypto crates (`argon2`, `hkdf`,
   `chacha20poly1305`, `ed25519-dalek`, `zeroize`) and only as specified in the crypto design.
 - All randomness from the OS CSPRNG (`getrandom` / `crypto.getRandomValues`). Never `Math.random`.

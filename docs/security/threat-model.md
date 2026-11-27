@@ -110,7 +110,7 @@ Status: **M** = mitigated by design, **P** = partly mitigated, **A** = accepted 
 | T-17 | Online guessing / account enumeration | AD-12 | Login needs a signature from `auth_sk` (needs ASK); fake prelogin responses; rate limiting on auth and recovery endpoints | M |
 | T-18 | Other local user uses the SSH agent | AD-10 | Socket in a 0700 directory, mode 0600, peer-uid check; keys only while unlocked | M |
 | T-19 | SSH agent forwarding abused by a remote host | AD-3-like remote | Documentation: do not forward the agent to untrusted hosts; per-use confirmation in v1.1 | A (v1) |
-| T-20 | Secrets leak through logs, errors, URLs, crash reports | all | No secrets in logs (redacting `Debug`), uniform errors, no analytics, canary-secret test in CI | M |
+| T-20 | Secrets leak through logs, errors, URLs, crash reports | all | No secrets in logs (secret types have no `Debug`, enforced at compile time), uniform errors, no analytics, canary-secret test in CI | M |
 | T-21 | Clipboard read by other apps or kept in history | AD-7 | Explicit copy only; native clears after 90 s; PWA cannot clear (UI says so) | P |
 | T-22 | Old password still unlocks a device that has not synced since a password change | AD-6 | Documented; other devices update on next sync; to cut off a lost device, revoke + rotate | A |
 | T-23 | Weak randomness | — | OS CSPRNG only; fail closed; test-only deterministic RNG blocked in release | M |

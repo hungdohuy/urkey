@@ -260,7 +260,7 @@ mod tests {
 
     #[test]
     fn errors_do_not_echo_input() {
-        let err = parse_account_secret_key("UK1-SECRETSECRET").unwrap_err();
+        let err = parse_account_secret_key("UK1-SECRETSECRET").err().unwrap();
         assert!(!err.to_string().contains("SECRET"));
     }
 }

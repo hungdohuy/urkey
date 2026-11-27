@@ -433,10 +433,11 @@ Before real credentials are stored, a reviewer must check at least:
 | Date | Change | Approved |
 |------|--------|----------|
 | 2026-11-26 | Approved for implementation | Owner |
-| 2026-11-26 | §3.2: Recovery Key display grouping clarified. The table said "groups of 4" but 52 + 1 characters cannot be split that way; the implementation puts the check character at the end of the last group (`…-XXXXC`). Display only: the parser ignores separators, so no encoded value changes. | **Pending owner approval** |
+| 2026-11-26 | §3.2: Recovery Key display grouping clarified. The table said "groups of 4" but 52 + 1 characters cannot be split that way; the implementation puts the check character at the end of the last group (`…-XXXXC`). Display only: the parser ignores separators, so no encoded value changes. | Approved by owner, 2026-11-27 (O-1) |
 | 2026-11-26 | §4.2: benchmark results recorded (native and WASM; iPhone still pending). | Measurement only |
 | 2026-11-26 | §14: open question Q-5 added (snapshot DEK wrapping is unspecified). | Question only |
-| 2026-11-26 | Encrypted export (ADR 0017): an export file holds the account's existing unlock envelope and item records unchanged. It is opened with the normal unlock (§7.3) and record checks (§7.2). No new construction; kind 0x07 and Q-5 stay open. | **Pending owner approval** |
+| 2026-11-27 | §16: secret-holding types implement no `Debug` at all (earlier: a redacting `Debug`). This matches §6's wording and the roadmap. | Owner decision, 2026-11-27 (O-2) |
+| 2026-11-26 | Encrypted export (ADR 0017): an export file holds the account's existing unlock envelope and item records unchanged. It is opened with the normal unlock (§7.3) and record checks (§7.2). No new construction; kind 0x07 and Q-5 stay open. | Approved by owner, 2026-11-27 (O-10) |
 
 ## 16. Implementation
 
@@ -444,7 +445,9 @@ Before real credentials are stored, a reviewer must check at least:
 Rust in WASM, and an independent Python check in `tests/interop/python/`). Fuzz targets:
 `crates/crypto-core/fuzz/`. Notes:
 
-- Secret types have a redacting `Debug` (prints `Name([REDACTED])`), no `Display`, no `Clone`.
+- Secret types have **no `Debug`**, no `Display` and no `Clone` (owner decision O-2, 2026-11-27). A
+  compile-time guard, `crypto_core::assert_not_debug!`, fails the build if any secret-holding type
+  in `crypto-core`, `vault-core`, `sync-core` or `ssh-agent` gains `Debug` again.
 - HKDF's internal HMAC state is zeroized through the `hmac`/`sha2` `zeroize` features; the
   Argon2 and XChaCha20-Poly1305 crates zeroize their state through their own features.
 - The explicit-nonce and explicit-seed functions used for vectors exist only with the

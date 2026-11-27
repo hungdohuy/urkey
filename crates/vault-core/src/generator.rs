@@ -73,14 +73,6 @@ pub struct Generated {
     pub bits: f64,
 }
 
-impl core::fmt::Debug for Generated {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Generated")
-            .field("bits", &self.bits)
-            .finish_non_exhaustive()
-    }
-}
-
 fn pick<T: Copy>(set: &[T]) -> Result<T> {
     let n = u32::try_from(set.len()).map_err(|_| VaultError::Invalid("set too large"))?;
     Ok(set[rng::below(n)? as usize])

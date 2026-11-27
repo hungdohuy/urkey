@@ -29,3 +29,35 @@ pub use error::VaultError;
 
 /// Result type of this crate.
 pub type Result<T> = core::result::Result<T, VaultError>;
+
+/// Compile-time check that no secret-holding type has `Debug` (owner decision O-2).
+#[cfg(test)]
+mod no_debug {
+    use crate::account::{
+        NewAccount, RecoveryKeyChange, RecoverySetup, Rotation, UnlockKeysChange, Unlocked,
+    };
+    use crate::generator::Generated;
+    use crate::item::{Content, Item, LoginFields, SshKeyFields};
+    use crate::record::{Opened, VaultKey};
+    use crate::ssh::AgentKey;
+    use crate::totp::{Code, Totp};
+
+    crypto_core::assert_not_debug!(
+        VaultKey,
+        Opened,
+        AgentKey,
+        Totp,
+        Code,
+        Generated,
+        Item,
+        Content,
+        LoginFields,
+        SshKeyFields,
+        Unlocked,
+        NewAccount,
+        UnlockKeysChange,
+        RecoveryKeyChange,
+        RecoverySetup,
+        Rotation,
+    );
+}

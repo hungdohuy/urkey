@@ -55,14 +55,6 @@ impl AuthKey {
     }
 }
 
-impl core::fmt::Debug for AuthKey {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("AuthKey")
-            .field("public_key", &self.public_key())
-            .finish_non_exhaustive()
-    }
-}
-
 /// Verifies a signature with strict RFC 8032 checks (rejects small-order and non-canonical inputs).
 pub fn verify(public_key: &[u8; 32], message: &[u8], signature: &[u8; 64]) -> Result<()> {
     let key = VerifyingKey::from_bytes(public_key)
@@ -208,14 +200,6 @@ mod tests {
         }
         assert!(msgs[1].starts_with(&[0, 0, 0, 18]));
         assert_eq!(&msgs[1][4..22], b"urkey/v1/sig/login");
-    }
-
-    #[test]
-    fn debug_does_not_show_secret() {
-        let key = AuthKey::from_seed(&[0x42; 32]);
-        let shown = format!("{key:?}");
-        assert!(shown.starts_with("AuthKey { public_key"));
-        assert!(!shown.contains("66, 66, 66"));
     }
 
     fn hex32(s: &str) -> [u8; 32] {

@@ -12,3 +12,12 @@ pub mod protocol;
 pub mod server;
 
 pub use agent::Agent;
+
+/// Compile-time check that no secret-holding type has `Debug` (owner decision O-2).
+#[cfg(test)]
+mod no_debug {
+    use crate::agent::Agent;
+    use crate::protocol::Request;
+
+    vault_core::crypto_core::assert_not_debug!(Agent, Request);
+}

@@ -33,7 +33,6 @@ pub struct UnlockMaterial {
 }
 
 /// The result of a successful unlock.
-#[derive(Debug)]
 pub struct Unlocked {
     /// Vault key.
     pub vault: VaultKey,
@@ -42,7 +41,6 @@ pub struct Unlocked {
 }
 
 /// A freshly created account.
-#[derive(Debug)]
 pub struct NewAccount {
     /// Payload for `POST /v1/accounts`.
     pub payload: CreateAccountPayload,
@@ -57,7 +55,6 @@ pub struct NewAccount {
 }
 
 /// New unlock credentials (password change or Secret Key rotation).
-#[derive(Debug)]
 pub struct UnlockKeysChange {
     /// Payload for `POST /v1/account/unlock-keys`.
     pub payload: UnlockKeysPayload,
@@ -70,7 +67,6 @@ pub struct UnlockKeysChange {
 }
 
 /// New recovery credentials.
-#[derive(Debug)]
 pub struct RecoveryKeyChange {
     /// Payload for `POST /v1/account/recovery-key`.
     pub payload: RecoveryKeyPayload,
@@ -79,7 +75,6 @@ pub struct RecoveryKeyChange {
 }
 
 /// Credentials set at the end of a recovery.
-#[derive(Debug)]
 pub struct RecoverySetup {
     /// Payload for `POST /v1/account/recover`.
     pub payload: RecoverPayload,
@@ -94,7 +89,6 @@ pub struct RecoverySetup {
 }
 
 /// A prepared vault-key rotation.
-#[derive(Debug)]
 pub struct Rotation {
     /// Payload for `POST /v1/account/rekey`.
     pub payload: RekeyPayload,
@@ -579,9 +573,11 @@ mod tests {
         let (info, _) = device();
         let a = create_account("a@b.c", "pw", &info, fast()).unwrap();
         let m = material(&a);
-        let e1 = unlock(&m, "nope", &a.secret_key).unwrap_err();
-        let e2 = unlock(&m, "pw", &AccountSecretKey::generate().unwrap()).unwrap_err();
-        let e3 = unlock(&m, "", &a.secret_key).unwrap_err();
+        let e1 = unlock(&m, "nope", &a.secret_key).err().unwrap();
+        let e2 = unlock(&m, "pw", &AccountSecretKey::generate().unwrap())
+            .err()
+            .unwrap();
+        let e3 = unlock(&m, "", &a.secret_key).err().unwrap();
         assert_eq!(e1, VaultError::Crypto(CryptoError::Decrypt));
         assert_eq!(e1, e2);
         assert_eq!(e1, e3);

@@ -66,14 +66,6 @@ pub struct AgentKey {
     comment: String,
 }
 
-impl core::fmt::Debug for AgentKey {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("AgentKey")
-            .field("comment", &self.comment)
-            .finish_non_exhaustive()
-    }
-}
-
 impl AgentKey {
     /// Loads a stored key for signing. Re-derives the public key and fingerprint and rejects the
     /// item if they do not match what was stored (data-model §1.4), and rejects RSA (ADR 0008).

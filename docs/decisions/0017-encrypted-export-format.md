@@ -1,7 +1,6 @@
 # 0017. Encrypted export reuses the account's own ciphertext
 
-- Status: Accepted for implementation (owner directive to complete all phases). **Pending owner
-  review**, because it is a crypto-adjacent format decision.
+- Status: **Accepted** (owner approved 2026-11-27, O-10)
 - Date: 2026-11-26
 - Roadmap: P7 "encrypted export"; acceptance: "restore from an encrypted export into a fresh
   account works". Related open question: crypto spec Q-5 (snapshot DEK wrapping).

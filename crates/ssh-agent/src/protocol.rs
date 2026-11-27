@@ -73,25 +73,6 @@ pub enum Request {
     Unsupported(u8),
 }
 
-impl core::fmt::Debug for Request {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::List => f.write_str("List"),
-            Self::Sign { .. } => f.write_str("Sign"),
-            Self::Add {
-                lifetime, confirm, ..
-            } => f
-                .debug_struct("Add")
-                .field("lifetime", lifetime)
-                .field("confirm", confirm)
-                .finish_non_exhaustive(),
-            Self::Remove { .. } => f.write_str("Remove"),
-            Self::RemoveAll => f.write_str("RemoveAll"),
-            Self::Unsupported(t) => write!(f, "Unsupported({t})"),
-        }
-    }
-}
-
 /// Reads one frame's payload.
 pub fn read_frame(r: &mut impl Read) -> Result<Vec<u8>, ProtocolError> {
     let mut len = [0u8; 4];

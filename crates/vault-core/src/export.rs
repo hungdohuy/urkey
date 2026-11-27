@@ -232,29 +232,29 @@ mod tests {
         let (a, file) = sample();
         let (other, _) = new_account();
         let decrypt = VaultError::Crypto(CryptoError::Decrypt);
-        assert_eq!(open(&file, "wrong", &a.secret_key).unwrap_err(), decrypt);
+        assert_eq!(open(&file, "wrong", &a.secret_key).err().unwrap(), decrypt);
         assert_eq!(
-            open(&file, PASSWORD, &other.secret_key).unwrap_err(),
+            open(&file, PASSWORD, &other.secret_key).err().unwrap(),
             decrypt
         );
 
         let mut changed = file.clone();
         changed.items[0].revision += 1;
         assert_eq!(
-            open(&changed, PASSWORD, &a.secret_key).unwrap_err(),
+            open(&changed, PASSWORD, &a.secret_key).err().unwrap(),
             decrypt
         );
 
         let mut swapped = file.clone();
         swapped.items[0].body.0[40] ^= 1;
         assert_eq!(
-            open(&swapped, PASSWORD, &a.secret_key).unwrap_err(),
+            open(&swapped, PASSWORD, &a.secret_key).err().unwrap(),
             decrypt
         );
 
         let mut dup = file.clone();
         dup.items.push(dup.items[0].clone());
-        assert_eq!(open(&dup, PASSWORD, &a.secret_key).unwrap_err(), decrypt);
+        assert_eq!(open(&dup, PASSWORD, &a.secret_key).err().unwrap(), decrypt);
 
         let mut params = file;
         params.kdf_params.0[1] ^= 1;

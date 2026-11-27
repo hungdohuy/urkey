@@ -19,12 +19,6 @@ pub struct Agent {
     keys: Mutex<Vec<Entry>>,
 }
 
-impl core::fmt::Debug for Agent {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Agent").finish_non_exhaustive()
-    }
-}
-
 fn failure() -> Vec<u8> {
     vec![msg::FAILURE]
 }

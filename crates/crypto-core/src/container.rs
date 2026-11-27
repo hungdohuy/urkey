@@ -508,7 +508,6 @@ pub fn seal_tombstone(
 }
 
 /// The authenticated content of an item record.
-#[derive(Debug)]
 pub enum ItemContent {
     /// The decrypted, unpadded body.
     Body(Zeroizing<Vec<u8>>),
@@ -602,7 +601,9 @@ mod tests {
         // Any change to trusted context fails (T-5: params/salt swapped by a server).
         let weaker = KdfParams::new(32_768, 2, 1).unwrap();
         assert_eq!(
-            unwrap_vmk_unlock(&kek, &env, ACCOUNT, VMK_ID, weaker, SALT).unwrap_err(),
+            unwrap_vmk_unlock(&kek, &env, ACCOUNT, VMK_ID, weaker, SALT)
+                .err()
+                .unwrap(),
             CryptoError::Decrypt
         );
         let salt2 = KdfSalt::from_bytes([5; 16]);
@@ -705,7 +706,7 @@ mod tests {
             let mut bad = c.clone();
             bad[i] ^= 0x01;
             assert_eq!(
-                open_item(&dek, ACCOUNT, ITEM, 1, &bad).unwrap_err(),
+                open_item(&dek, ACCOUNT, ITEM, 1, &bad).err().unwrap(),
                 CryptoError::Decrypt,
                 "byte {i}"
             );
@@ -719,14 +720,14 @@ mod tests {
             c.len() - 1,
         ] {
             assert_eq!(
-                open_item(&dek, ACCOUNT, ITEM, 1, &c[..len]).unwrap_err(),
+                open_item(&dek, ACCOUNT, ITEM, 1, &c[..len]).err().unwrap(),
                 CryptoError::Decrypt
             );
         }
         let mut longer = c.clone();
         longer.push(0);
         assert_eq!(
-            open_item(&dek, ACCOUNT, ITEM, 1, &longer).unwrap_err(),
+            open_item(&dek, ACCOUNT, ITEM, 1, &longer).err().unwrap(),
             CryptoError::Decrypt
         );
     }

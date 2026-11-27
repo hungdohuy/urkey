@@ -1,5 +1,6 @@
-//! Secret key types (spec §3, §8.3). Every type here zeroizes on drop, is not `Clone`, and has a
-//! redacting `Debug` implementation, so secrets cannot be printed by accident.
+//! Secret key types (spec §3, §8.3). Every type here zeroizes on drop, is not `Clone`, and has no
+//! `Debug` or `Display` at all, so secrets cannot be printed by accident (owner decision O-2; the
+//! guard in `no_debug.rs` fails the build if one gains `Debug`).
 
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -38,12 +39,6 @@ macro_rules! secret_bytes {
                 &self.0
             }
         }
-
-        impl core::fmt::Debug for $name {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.write_str(concat!(stringify!($name), "([REDACTED])"))
-            }
-        }
     };
 }
 
@@ -75,14 +70,6 @@ secret_bytes!(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn debug_output_is_redacted() {
-        let key = VaultMasterKey::from_slice(&[0xAB; 32]).unwrap();
-        let shown = format!("{key:?}");
-        assert_eq!(shown, "VaultMasterKey([REDACTED])");
-        assert!(!shown.contains("ab") && !shown.contains("AB") && !shown.contains("171"));
-    }
 
     #[test]
     fn wrong_length_is_rejected() {

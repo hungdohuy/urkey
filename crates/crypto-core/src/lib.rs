@@ -31,6 +31,8 @@ mod error;
 pub mod ids;
 pub mod kdf;
 mod lp;
+#[doc(hidden)]
+pub mod no_debug;
 pub mod padding;
 mod rng;
 pub mod secret;

@@ -108,7 +108,6 @@ impl KdfParams {
 }
 
 /// Keys derived from the master password and Account Secret Key.
-#[derive(Debug)]
 pub struct UnlockKeys {
     /// Wraps the VMK in the unlock envelope.
     pub kek: UnlockKek,
@@ -117,7 +116,6 @@ pub struct UnlockKeys {
 }
 
 /// Keys derived from the Recovery Key.
-#[derive(Debug)]
 pub struct RecoveryKeys {
     /// Wraps the VMK in the recovery envelope.
     pub kek: RecoveryKek,

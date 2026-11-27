@@ -27,17 +27,8 @@ pub struct Totp {
     period: u32,
 }
 
-impl core::fmt::Debug for Totp {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Totp")
-            .field("algorithm", &self.algorithm)
-            .field("digits", &self.digits)
-            .finish_non_exhaustive()
-    }
-}
-
 /// A generated code.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Code {
     /// Zero-padded digits.
     pub code: String,
