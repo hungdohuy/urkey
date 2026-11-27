@@ -43,6 +43,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | O-9 | Arrange the independent security review | Required before real credentials (M2) | crypto spec §13, threat model §6/§9a |
 | O-11 | Update the phase section in `CLAUDE.md` (it still says P2–P7) | You own that section | `CLAUDE.md` |
 | O-12 | Check layouts on a real phone and tablet (Playwright covers desktop Chrome) | R-UX-1 | `docs/ux/screens.md` §8 |
+| O-13 | Decide the 2026-11-27 zero-knowledge review findings: M-1 (account creation reveals registered emails), M-2 (check Cloudflare logs before deploy), L-1/L-2 (small hardening) | Review follow-up | `docs/security/reviews/2026-11-27-zero-knowledge-review.md` |
 
 ## Phases
 
@@ -149,6 +150,9 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-27 (d)** — Zero-knowledge self-review: the core property holds (no critical or high findings);
+  2 medium and 2 low findings written up for the owner (O-13). It does not replace the independent review (O-9).
 
 - **2026-11-27 (c)** — Owner decisions: O-1 and O-10 approved; O-2: secret types get no `Debug` at all.
   Removed every `Debug` (manual and derived) from secret-holding types in crypto-core, vault-core,
