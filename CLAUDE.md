@@ -166,5 +166,5 @@ current task.
   `dangerouslySetInnerHTML`, Rust `unwrap/expect/panic/print` denied outside tests.
 - Exact versions everywhere (`save-exact`, pinned toolchain, `wasm-bindgen = "=0.2.130"`).
 - Commits: imperative subject, body explains why; reference R-/D- ids where relevant.
-- UI: original design system (no 1Password assets, names or copy); sensitive values masked by
+- UI: original design system (no third-party product assets, names or copy); sensitive values masked by
   default; every action has visible feedback; keyboard accessible.

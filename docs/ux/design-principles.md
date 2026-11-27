@@ -5,8 +5,8 @@ Related: [`screens.md`](screens.md) (screen and component map), [`../requirement
 
 ## 1. Reference, not imitation
 
-1Password is the **quality and interaction reference** (brief §3). We take general,
-widely-used patterns that make it pleasant:
+The **quality and interaction reference** is the mature password-manager category (brief §3).
+We take general, widely-used patterns that make such apps pleasant:
 
 - a persistent sidebar for categories, a searchable item list, a focused detail pane;
 - fields shown as labelled rows with copy and reveal right next to the value;
