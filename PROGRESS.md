@@ -13,7 +13,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | Current phase | **P2–P7 engineering complete.** Every phase gate still needs owner-only steps (below). |
 | Branch | `claude/youthful-archimedes-v6dhz1` (no PR yet) |
 | CI | 2 jobs: Linux (`scripts/dev.sh check`, everything incl. e2e) and macOS (CLI + agent). |
-| V1 requirements | 44 of 48 done, 3 partly done, 1 open (R-SSH-5, planned for V1.1) |
+| V1 requirements | 45 of 48 done, 2 partly done (R-SSH-2 needs a real Mac, R-SEC-13 needs deployment), 1 open (R-SSH-5, V1.1) |
 | Data | **Test data only** until M2. Nothing is deployed. |
 
 ## Resume here (next steps, in order)
@@ -26,7 +26,6 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 3. **Owner:** deployment (O-8) following `docs/operations/deploy.md`, then M1 (two weeks with
    test data on two devices plus the CLI).
 4. **Engineering, optional before the review:**
-   - a fault-injection test for Recovery Key replacement (P5);
    - a parallel-push stress test against deployed D1 (P4);
    - R2 snapshots, once Q-5 is decided (O-5).
 5. On each session: run `scripts/dev.sh check` and keep this file current.
@@ -57,7 +56,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | P2 Local vault + web UI | 🟡 | Implemented and tested; gate needs O-3, O-12, the canary test |
 | P3 Server, auth, devices | 🟡 | Implemented; prelogin timing to measure on a deployed Worker |
 | P4 Sync | 🟡 | Implemented, 10,000-scenario simulation; D1 parallel-push stress test after deploy |
-| P5 Recovery + rotation | 🟡 | Implemented; fault-injection test open |
+| P5 Recovery + rotation | 🟡 | Implemented and fault-injection tested; gate needs the owner review (O-3) |
 | P6 CLI + SSH agent (macOS) | 🟡 | Implemented, real-sshd e2e on Linux, macOS CI build; real-Mac test is O-6 |
 | P7 Hardening + release | 🟡 | CSP/TT, SW pinning, reproducible hash, export/restore, CI, runbook done; R2 snapshots (O-5), deploy (O-8), review (O-9) |
 | M1 Personal testing | ⏸ | After O-8 |
@@ -79,7 +78,7 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 | R-ACC-7 | Secret Key rotation | ✅ | account tests; Settings › Security |
 | R-REC-1 | Recover with Recovery Key only | ✅ | Playwright recovery test |
 | R-REC-2 | Recovery forces new password, Secret Key, Recovery Key | ✅ | `setup_after_recovery`; Playwright |
-| R-REC-3 | Recovery Key rotation, atomic | 🟡 | D1 guarded batch; fault-injection test open |
+| R-REC-3 | Recovery Key rotation, atomic | ✅ | D1 guarded batch; lost responses resolved by re-reading the account; fault injection in `e2e/fault.spec.ts` |
 | R-REC-4 | Clear guidance on each secret | ✅ | UX copy per `docs/security/recovery.md` |
 
 ### Authentication and devices
@@ -153,7 +152,10 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 
 Newest first. One short entry per session: what changed, where it stopped.
 
-- **2026-11-27 (b)** — R-SEC-1 canary test (Playwright) and R-ITEM-7 `urk item copy` with clearing after 90 s.
+- **2026-11-27 (b)** — R-SEC-1 canary test (Playwright); R-ITEM-7 `urk item copy` with clearing after 90 s;
+  R-REC-3: found and fixed a lost-response gap in all key changes (the client could discard a
+  committed Recovery Key or Secret Key). Unclear outcomes are now confirmed by re-reading the account, which
+  now returns the public `rauth_pk`; there is a fault-injection test.
 
 - **2026-11-27** — The owner ran `scripts/dev.sh setup` and `dev` successfully (web app + CLI);
   features not yet checked. Fixed the declared Node range (jsdom needs 22.22.2+/24.15+; `.nvmrc`,

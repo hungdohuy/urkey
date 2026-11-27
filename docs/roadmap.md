@@ -145,8 +145,9 @@ rotation, VMK rotation, device-removal-then-rotate flow, security events and not
 
 **Status (2026-11-26): implemented, gate open.** Recovery, password, Secret Key, Recovery Key and
 vault key changes, in the web app and the API, with browser tests for the password change, vault key
-rotation and recovery that revokes the old device. Open: the fault-injection test that interrupts
-a Recovery Key replacement mid-request.
+rotation and recovery that revokes the old device. The fault-injection test (`e2e/fault.spec.ts`)
+cuts a Recovery Key replacement at three points; the client now confirms unclear outcomes by
+re-reading the account (recovery.md §4.0).
 
 ## P6 — CLI and SSH agent (macOS)
 

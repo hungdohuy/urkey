@@ -48,6 +48,7 @@ export function errorText(e: unknown): string {
     vault_changed: "Your vault changed while preparing this. Try again.",
     read_only: "This item was made by a newer version of urkey and can't be edited here.",
     locked: "Your vault is locked.",
+    unconfirmed: "We couldn't reach the server to confirm the change. Remember both passwords; after you reconnect, the vault asks for the one that is active.",
   };
   if (code.startsWith("invalid: ")) return code.slice(9).replace(/^./, (c) => c.toUpperCase()) + ".";
   return map[code] ?? "Something went wrong. Try again.";

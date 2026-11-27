@@ -66,6 +66,8 @@ export function accountState(a: Account, env: Env) {
     kdf_salt: encode(a.kdfSalt),
     kdf_params: encode(a.kdfParams),
     auth_pk: encode(a.authPk),
+    // Public: lets a client confirm a Recovery Key replacement whose response was lost (R-REC-3).
+    rauth_pk: encode(a.rauthPk),
     unlock_env: encode(a.unlockEnv),
     vmk_id: encode(a.vmkId),
     keyset_version: a.keysetVersion,

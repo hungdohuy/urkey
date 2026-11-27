@@ -93,6 +93,9 @@ pub struct AccountState {
     pub kdf_params: B64,
     /// Account auth public key.
     pub auth_pk: B64,
+    /// Recovery auth public key. Lets a client confirm a Recovery Key replacement whose
+    /// response was lost (R-REC-3).
+    pub rauth_pk: B64,
     /// Unlock envelope (container 0x01).
     pub unlock_env: B64,
     /// Current VMK generation.

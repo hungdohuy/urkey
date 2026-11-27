@@ -26,7 +26,7 @@ function SecurityTab() {
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [kit, setKit] = useState<{ secret?: string; recovery?: string } | null>(null);
+  const [kit, setKit] = useState<{ secret?: string; recovery?: string; unconfirmed?: boolean } | null>(null);
   const close = () => {
     setDialog(null);
     setPw("");
@@ -56,13 +56,13 @@ function SecurityTab() {
         close();
       } else if (dialog === "secretKey") {
         const r = await call("rotateSecretKey", { password: pw });
-        setKit({ secret: r.secretKeyText });
+        setKit({ secret: r.secretKeyText, unconfirmed: !r.confirmed });
       } else if (dialog === "recoveryKey") {
         const r = await call("replaceRecoveryKey", undefined);
-        setKit({ recovery: r.recoveryKeyText });
+        setKit({ recovery: r.recoveryKeyText, unconfirmed: !r.confirmed });
       } else if (dialog === "vaultKey") {
         const r = await call("rotateVaultKey", { password: pw });
-        setKit({ recovery: r.recoveryKeyText });
+        setKit({ recovery: r.recoveryKeyText, unconfirmed: !r.confirmed });
       } else if (dialog === "showSecretKey") {
         setKit({ secret: await call("secretKeyText", undefined) });
       }
@@ -103,7 +103,14 @@ function SecurityTab() {
       </div>
       <Modal open={dialog !== null} onOpenChange={(o) => !o && close()} title={dialog === null ? "" : TITLE[dialog]} description={dialog === null ? "" : DESC[dialog]}>
         {kit !== null ? (
+          <>
+          {kit.unconfirmed === true && (
+            <Banner tone="warn">
+              We couldn&apos;t reach the server to confirm this change. Keep <strong>both</strong> your current and this new {kit.secret === undefined ? "Recovery Key" : "Secret Key"} until you can repeat the change online. One of them works.
+            </Banner>
+          )}
           <KitStep email={state.email ?? ""} {...(kit.secret === undefined ? {} : { secretKey: kit.secret })} {...(kit.recovery === undefined ? {} : { recoveryKey: kit.recovery })} onDone={close} doneLabel="Done" />
+          </>
         ) : (
           <form onSubmit={submit} style={{ display: "grid", gap: "var(--space-3)" }}>
             {dialog === "password" && (

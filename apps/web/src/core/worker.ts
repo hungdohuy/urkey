@@ -162,6 +162,46 @@ async function fetchAccount(): Promise<{ account: Record<string, unknown>; devic
   return api("/v1/account");
 }
 
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * A step-up key change whose outcome must never be lost (R-REC-3: there is never a moment when
+ * neither the old nor the new secret works).
+ *
+ * A 4xx is a definite refusal: nothing changed. A network error or 5xx is ambiguous, because the
+ * server may have applied the change before the response was lost. In that case the account is
+ * re-read a few times and `applied` compares it with the payload we sent. The result is
+ * `"unknown"` only if the server can't be reached at all; the caller must then keep both the
+ * old and the new secret.
+ */
+async function keyChange(
+  path: string,
+  operation: string,
+  payloadJson: string,
+  applied: (account: Record<string, unknown>) => boolean,
+): Promise<{ account: Record<string, unknown> } | "unknown"> {
+  try {
+    return await stepup(path, operation, payloadJson);
+  } catch (e) {
+    if (!(e instanceof ApiError) || (e.status >= 400 && e.status < 500)) throw e;
+    let reached = false;
+    for (const wait of [0, 1000, 3000]) {
+      await sleep(wait);
+      try {
+        const a = await fetchAccount();
+        reached = true;
+        if (applied(a.account)) return { account: a.account };
+      } catch {
+        /* still unreachable */
+      }
+    }
+    if (reached) throw e; // the server answered and does not have the change: nothing happened
+    return "unknown";
+  }
+}
+
+const field = (o: unknown, k: string): unknown => (typeof o === "object" && o !== null ? (o as Record<string, unknown>)[k] : undefined);
+
 // ------------------------------------------------------------------ persistence
 
 async function saveSync(): Promise<void> {
@@ -464,8 +504,15 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
 
   async changePassword({ newPassword }) {
     const c = need();
+    const payload = c.prepare_password_change(newPassword);
+    const env = field(JSON.parse(payload), "unlock_env");
     try {
-      const r = await stepup("/v1/account/unlock-keys", "change_unlock_keys", c.prepare_password_change(newPassword));
+      const r = await keyChange("/v1/account/unlock-keys", "change_unlock_keys", payload, (a) => a["unlock_env"] === env);
+      if (r === "unknown") {
+        c.discard_change();
+        // The user knows both passwords; after reconnecting, the vault asks for whichever is live.
+        throw new ApiError(0, "unconfirmed");
+      }
       c.commit_change(JSON.stringify(r.account));
       await idb.put("kv", "account", r.account);
     } catch (e) {
@@ -478,8 +525,14 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
   async rotateSecretKey({ password }) {
     const c = need();
     const out = JSON.parse(c.prepare_secret_key_rotation(password)) as { payload: unknown; secret_key_text: string };
+    const env = field(out.payload, "unlock_env");
     try {
-      const r = await stepup("/v1/account/unlock-keys", "change_unlock_keys", JSON.stringify(out.payload));
+      const r = await keyChange("/v1/account/unlock-keys", "change_unlock_keys", JSON.stringify(out.payload), (a) => a["unlock_env"] === env);
+      if (r === "unknown") {
+        // Show the new Secret Key anyway: the user keeps both until the change is confirmed.
+        c.discard_change();
+        return { secretKeyText: out.secret_key_text, confirmed: false };
+      }
       const ask = c.commit_change(JSON.stringify(r.account));
       await idb.put("kv", "account", r.account);
       if (config !== null && ask !== "") await wrapSecretKey(c, config.accountId, decode(ask));
@@ -487,20 +540,25 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
       c.discard_change();
       throw e;
     }
-    return { secretKeyText: out.secret_key_text };
+    return { secretKeyText: out.secret_key_text, confirmed: true };
   },
 
   async replaceRecoveryKey() {
     const c = need();
     const out = JSON.parse(c.prepare_recovery_key()) as { payload: unknown; recovery_key_text: string };
+    const rauth = field(out.payload, "rauth_pk");
     try {
-      const r = await stepup("/v1/account/recovery-key", "replace_recovery_key", JSON.stringify(out.payload));
+      const r = await keyChange("/v1/account/recovery-key", "replace_recovery_key", JSON.stringify(out.payload), (a) => a["rauth_pk"] === rauth);
+      if (r === "unknown") {
+        c.discard_change();
+        return { recoveryKeyText: out.recovery_key_text, confirmed: false };
+      }
       c.commit_change(JSON.stringify(r.account));
     } catch (e) {
       c.discard_change();
       throw e;
     }
-    return { recoveryKeyText: out.recovery_key_text };
+    return { recoveryKeyText: out.recovery_key_text, confirmed: true };
   },
 
   async rotateVaultKey({ password }) {
@@ -509,9 +567,15 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
     const a = await fetchAccount();
     const expected = Number(a.account["vault_seq"]);
     const out = JSON.parse(c.prepare_rekey(password, expected)) as { payload: unknown; recovery_key_text: string };
+    const vmk = field(out.payload, "vmk_id");
     stopSync();
     try {
-      const r = await stepup("/v1/account/rekey", "rekey", JSON.stringify(out.payload));
+      const r = await keyChange("/v1/account/rekey", "rekey", JSON.stringify(out.payload), (a) => a["vmk_id"] === vmk);
+      if (r === "unknown") {
+        // If the server did apply it, the next sync sees the new vault key and rebases (sync.md §8.4).
+        c.discard_change();
+        return { recoveryKeyText: out.recovery_key_text, confirmed: false };
+      }
       c.commit_change(JSON.stringify(r.account));
       await idb.put("kv", "account", r.account);
       await pullAll();
@@ -523,7 +587,7 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
       startSync();
     }
     notify({ notice: "items_changed" });
-    return { recoveryKeyText: out.recovery_key_text };
+    return { recoveryKeyText: out.recovery_key_text, confirmed: true };
   },
 
   async revokeDevice({ deviceId }) {

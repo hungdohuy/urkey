@@ -108,9 +108,11 @@ export interface Methods {
   clearRollback: { params: undefined; result: null };
   account: { params: undefined; result: { account: Record<string, unknown>; devices: DeviceRecord[]; thisDevice: string } };
   changePassword: { params: { newPassword: string }; result: null };
-  rotateSecretKey: { params: { password: string }; result: { secretKeyText: string } };
-  replaceRecoveryKey: { params: undefined; result: { recoveryKeyText: string } };
-  rotateVaultKey: { params: { password: string }; result: { recoveryKeyText: string } };
+  // `confirmed: false`: the server could not be reached to confirm the change (R-REC-3). The new
+  // secret is shown anyway, and the user keeps both the old and the new one.
+  rotateSecretKey: { params: { password: string }; result: { secretKeyText: string; confirmed: boolean } };
+  replaceRecoveryKey: { params: undefined; result: { recoveryKeyText: string; confirmed: boolean } };
+  rotateVaultKey: { params: { password: string }; result: { recoveryKeyText: string; confirmed: boolean } };
   revokeDevice: { params: { deviceId: string }; result: null };
   renameDevice: { params: { deviceId: string; name: string }; result: null };
   recoveryStart: { params: { email: string; recoveryKey: string; deviceName: string }; result: null };

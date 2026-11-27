@@ -75,6 +75,20 @@ atomic server transaction, records a security event, and leaves items untouched 
 | 4.3 Replace Recovery Key | Kit lost/exposed, routine | Recovery envelope, recovery auth key; new Emergency Kit | Notice only | No |
 | 4.4 Change vault key (VMK) | Device lost/stolen, suspected compromise, after recovery | New VMK, new DEK per item, both envelopes, **new Recovery Key** (D-12) | Next sync: re-unlock; pending edits are re-encrypted (sync.md §8.4) | **Yes** |
 
+### 4.0 Lost responses (R-REC-3)
+A request can reach the server and commit, and then its response can be lost (network cut, 5xx).
+Discarding the new secret at that point would leave the old one dead and the new one never
+shown. So the client treats only a 4xx as a definite refusal. On a network error or 5xx it
+re-reads `GET /v1/account` a few times and compares it with what it sent: `unlock_env` (4.1,
+4.2), `rauth_pk` (4.3) or `vmk_id` (4.4).
+- Found: the change succeeded; proceed as normal and show the new kit.
+- Server answered, value not found: nothing changed; report the error.
+- Server unreachable: the new Secret Key or Recovery Key is shown anyway, with a warning to keep
+  **both** the old and the new one until the change can be repeated online. After a password
+  change, the user is told to remember both.
+
+Implemented in `apps/web/src/core/worker.ts` (`keyChange`), tested in `e2e/fault.spec.ts`.
+
 ### 4.4 VMK rotation details
 - Shown with progress ("Re-encrypting 412 items…"); the vault stays readable but editing is
   paused until the upload commits.
@@ -99,6 +113,8 @@ atomic server transaction, records a security event, and leaves items untouched 
 ## 6. Tests (acceptance)
 - R-REC-1: fresh device recovers with Recovery Key only and reads all items.
 - R-REC-2: after recovery the old Recovery Key, Secret Key and password fail; other devices are revoked.
-- R-REC-3: fault injection at each step of replacement — at every point exactly one Recovery Key works.
+- R-REC-3: fault injection at each step of replacement — at every point exactly one Recovery Key works
+  (`apps/web/e2e/fault.spec.ts`: dropped before the server, applied with the response and re-read
+  lost, applied with only the response lost; a fresh browser proves which key is live).
 - R-ACC-6/7: item containers byte-identical across 4.1–4.3.
 - R-DEV-3: after 4.4 no container references the old `vmk_id`; the old VMK opens nothing new.

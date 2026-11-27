@@ -35,7 +35,7 @@ JSON canonicalization between languages.
 | `POST /v1/auth/refresh` | — | `RefreshRequest` | `SessionResponse` (full) | `refresh` (§7.9), device key |
 | `POST /v1/auth/recovery` | — | `RecoveryLoginRequest` | `RecoveryLoginResponse` (recovery session + recovery envelope) | `recovery` (§7.7), recovery key **and** device key |
 | `POST /v1/auth/logout` | full/recovery | — | `204` | — |
-| `GET /v1/account` | full | — | `AccountResponse` | — |
+| `GET /v1/account` | full | — | `AccountResponse` (account state incl. public `auth_pk`, `rauth_pk`, `unlock_env`, `vmk_id`, `keyset_version`; devices) | — |
 | `POST /v1/account/unlock-keys` | full | `SignedRequest`(`UnlockKeysPayload`), `sig_account` + `sig_new` | `AccountResponse` | `stepup`, operation `change_unlock_keys` |
 | `POST /v1/account/recovery-key` | full | `SignedRequest`(`RecoveryKeyPayload`) | `AccountResponse` | `stepup`, operation `replace_recovery_key` |
 | `POST /v1/account/rekey` | full | `SignedRequest`(`RekeyPayload`) | `AccountResponse`; `409 vault_changed` if `expected_vault_seq` is stale | `stepup`, operation `rekey` |
@@ -45,6 +45,9 @@ JSON canonicalization between languages.
 | `GET /v1/sync/changes?since=&limit=` | full | — | `ChangesResponse`; `410 resync_required` if `0 < since < tombstone_horizon` | — |
 | `POST /v1/sync/push` | full | `PushRequest` (≤ 100) | `PushResponse` | — |
 | `GET /v1/health` | — | — | `{status, api, min_client_version}` | — |
+
+After a key change whose response was lost, clients re-read `GET /v1/account` to learn whether it
+was applied (recovery.md §4.0); the request itself is not retried.
 
 Step-up endpoints require a `stepup` challenge issued to the same account's full session, and a
 signature by the **current** account auth key. `unlock-keys` also requires `sig_new` by the new
