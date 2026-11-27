@@ -171,8 +171,9 @@ These must always hold; each has (or will have) a test.
 - **T-20:** the tests check that storage (IndexedDB, the export file) contains no plaintext,
   and that error messages are fixed strings. A full canary test over console output, DOM
   attributes and URLs is part of the review checklist.
-- **T-21:** the CLI prints a field only on request (`--field`), and has no clipboard
-  integration yet (R-ITEM-7 is a *should*, open).
+- **T-21:** the CLI prints a field only on request (`--field`). `urk item copy` puts it on the
+  clipboard and a detached helper clears it after 90 s if it is unchanged (R-ITEM-7). The helper
+  gets the value on stdin, not as an argument, so `ps` never shows it.
 
 ## 10. Residual risks for the owner to accept
 

@@ -63,6 +63,8 @@ Use a second browser or a private window as "device 2".
 ```
 
 - [ ] `item list` shows what the web app created (Rust ↔ WASM interop) **(auto)**
+- [ ] `./scripts/dev.sh cli item copy "<title>"` → paste works; after 90 s the clipboard is empty
+      (and if you copy something else meanwhile, it is left alone) (R-ITEM-7)
 - [ ] macOS: the first run asks for Keychain access for `dev.urkey`; after you allow it, no
       Secret Key file exists in the profile directory (ADR 0006)
 - [ ] `./scripts/dev.sh cli agent run` in one terminal; in another, `./scripts/dev.sh cli unlock --minutes 5`

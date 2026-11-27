@@ -89,8 +89,8 @@ design system and all vault screens; local-only account (stored in IndexedDB) fo
 
 **Status (2026-11-26): implemented, gate open.** All vault screens, TOTP, the generator and the
 WASM core in a Web Worker. Tests: 29 component tests, Playwright including storage inspection
-and axe; the generator χ² test runs on 10⁶ samples. Open: the full canary test (R-SEC-1), and
-the owner checking layouts on a real phone and tablet.
+and axe; the generator χ² test runs on 10⁶ samples; the canary test (`e2e/canary.spec.ts`) covers
+R-SEC-1 and P3's request capture. Open: the owner checking layouts on a real phone and tablet.
 
 ## P3 — Server, authentication and devices
 

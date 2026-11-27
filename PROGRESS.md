@@ -13,7 +13,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | Current phase | **P2–P7 engineering complete.** Every phase gate still needs owner-only steps (below). |
 | Branch | `claude/youthful-archimedes-v6dhz1` (no PR yet) |
 | CI | 2 jobs: Linux (`scripts/dev.sh check`, everything incl. e2e) and macOS (CLI + agent). |
-| V1 requirements | 42 of 48 done, 4 partly done, 2 open (R-ITEM-7, a *should*; R-SSH-5, planned for V1.1) |
+| V1 requirements | 44 of 48 done, 3 partly done, 1 open (R-SSH-5, planned for V1.1) |
 | Data | **Test data only** until M2. Nothing is deployed. |
 
 ## Resume here (next steps, in order)
@@ -26,10 +26,8 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 3. **Owner:** deployment (O-8) following `docs/operations/deploy.md`, then M1 (two weeks with
    test data on two devices plus the CLI).
 4. **Engineering, optional before the review:**
-   - a full canary test over console output, DOM attributes, URLs and titles (R-SEC-1);
    - a fault-injection test for Recovery Key replacement (P5);
    - a parallel-push stress test against deployed D1 (P4);
-   - CLI clipboard copy with clearing after 90 s (R-ITEM-7);
    - R2 snapshots, once Q-5 is decided (O-5).
 5. On each session: run `scripts/dev.sh check` and keep this file current.
 
@@ -103,7 +101,7 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 | R-ITEM-4 | Mask / reveal / copy with feedback | ✅ | Playwright (masked until reveal, DOM check) |
 | R-ITEM-5 | TOTP (RFC 6238) | ✅ | RFC vectors; live code in UI |
 | R-ITEM-6 | Password generator | ✅ | χ² on 10⁶ samples; EFF wordlist |
-| R-ITEM-7 (S) | Native clipboard clearing | ⬜ | CLI prints fields on request only; no clipboard yet |
+| R-ITEM-7 (S) | Native clipboard clearing | ✅ | `urk item copy` clears after 90 s if unchanged (`cli_e2e.sh`); real `pbcopy` on macOS is in the manual checklist |
 
 ### Sync
 | ID | Requirement | Status | Evidence |
@@ -127,7 +125,7 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ### Security
 | ID | Requirement | Status | Evidence |
 |----|-------------|--------|----------|
-| R-SEC-1 | No secrets in logs, URLs, errors | 🟡 | redacting types, lint rules, fixed errors, storage tests; full canary test open |
+| R-SEC-1 | No secrets in logs, URLs, errors | ✅ | canary test (`e2e/canary.spec.ts`): console, titles, URLs, request bodies, DOM/attributes, web storage; storage inspection; fixed errors |
 | R-SEC-2 | Versioned formats with algorithm ids | ✅ | containers, item `schema`, export `version`, API `/v1` |
 | R-SEC-3 | Reviewed crypto libraries only | ✅ | RustCrypto; OpenSSL banned |
 | R-SEC-4 | Cross-platform test vectors | ✅ | native ↔ WASM ↔ Python |
@@ -154,6 +152,8 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-27 (b)** — R-SEC-1 canary test (Playwright) and R-ITEM-7 `urk item copy` with clearing after 90 s.
 
 - **2026-11-27** — The owner ran `scripts/dev.sh setup` and `dev` successfully (web app + CLI);
   features not yet checked. Fixed the declared Node range (jsdom needs 22.22.2+/24.15+; `.nvmrc`,

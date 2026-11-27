@@ -82,6 +82,24 @@ mkdir -p /run/sshd 2>/dev/null || true
 sleep 1
 rm -f "$WORK/id_e2e"   # the private key now exists only in the vault
 
+step "device 1: copy a password; the clipboard clears itself (R-ITEM-7)"
+CLIP="$WORK/clipboard"
+printf '#!/bin/sh\ncat > "%s"\n' "$CLIP" >"$WORK/fake-copy"
+printf '#!/bin/sh\ncat "%s" 2>/dev/null\n' "$CLIP" >"$WORK/fake-paste"
+chmod +x "$WORK/fake-copy" "$WORK/fake-paste"
+export URKEY_CLIPBOARD_COPY="$WORK/fake-copy" URKEY_CLIPBOARD_PASTE="$WORK/fake-paste" URKEY_CLIPBOARD_CLEAR_SECS=2
+OUT=$(printf '%s\n' "$PASSWORD" | u1 item copy "Example" --password-stdin)
+grep -q "Password copied. Clears in 2 s." <<<"$OUT" || fail "copy message"
+grep -qF -e "$PW1" <<<"$OUT" && fail "copy printed the password"
+[[ "$(cat "$CLIP")" == "$PW1" ]] || fail "clipboard does not hold the password"
+sleep 4
+[[ -z "$(cat "$CLIP")" ]] || fail "clipboard was not cleared"
+printf '%s\n' "$PASSWORD" | u1 item copy "Example" --password-stdin >/dev/null
+printf 'something the user copied later' >"$CLIP"
+sleep 4
+[[ "$(cat "$CLIP")" == "something the user copied later" ]] || fail "clearing wiped a newer clipboard value"
+unset URKEY_CLIPBOARD_COPY URKEY_CLIPBOARD_PASTE URKEY_CLIPBOARD_CLEAR_SECS
+
 step "device 1: agent + unlock, then ssh with the vault key"
 SOCK="$D1/agent.sock"
 URKEY_HOME="$D1" "$URK" agent run 2>"$WORK/agent.log" & pids+=($!)

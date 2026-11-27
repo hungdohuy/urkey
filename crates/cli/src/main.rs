@@ -1,6 +1,7 @@
 //! `urk` — the urkey command-line interface and SSH agent launcher (R-SSH-4, ADR 0015).
 
 mod api;
+mod clipboard;
 mod error;
 mod output;
 mod paths;
@@ -111,6 +112,9 @@ enum Command {
         #[arg(long)]
         password_stdin: bool,
     },
+    /// Internal: clears the clipboard after a copy (R-ITEM-7). Reads the copied value on stdin.
+    #[command(name = "__clear-clipboard", hide = true)]
+    ClearClipboard { after_secs: u64 },
     /// Sign out and remove all urkey data from this device.
     Forget {
         /// Required: confirms deleting local data.
@@ -147,6 +151,16 @@ enum ItemCmd {
         field: Option<String>,
         #[arg(long)]
         reveal: bool,
+        #[arg(long)]
+        password_stdin: bool,
+    },
+    /// Copy one field to the clipboard; it is cleared after 90 s if unchanged (R-ITEM-7).
+    Copy {
+        /// Short id or search text that matches exactly one item.
+        query: String,
+        /// username, password, totp, notes, url or public_key.
+        #[arg(long, default_value = "password")]
+        field: String,
         #[arg(long)]
         password_stdin: bool,
     },
@@ -241,6 +255,11 @@ fn run(cli: Cli) -> Result<()> {
             reveal,
             password_stdin,
         }) => item_get(&query, field.as_deref(), reveal, password_stdin),
+        Command::Item(ItemCmd::Copy {
+            query,
+            field,
+            password_stdin,
+        }) => item_copy(&query, &field, password_stdin),
         Command::Item(ItemCmd::AddLogin {
             title,
             username,
@@ -268,6 +287,7 @@ fn run(cli: Cli) -> Result<()> {
             file,
             password_stdin,
         } => restore(&file, password_stdin),
+        Command::ClearClipboard { after_secs } => clipboard::clear_after(after_secs),
         Command::Forget { yes } => forget(yes),
     }
 }
@@ -620,6 +640,47 @@ fn find<'a>(items: &'a [profile::ViewItem], query: &str) -> Result<&'a profile::
     }
 }
 
+/// One field of an item, as `item get --field` and `item copy` use it.
+fn field_value(item: &Item, field: &str, now: u64) -> Result<zeroize::Zeroizing<String>> {
+    let value = match (&item.content, field) {
+        (Content::Login(l), "username") => l.username.clone(),
+        (Content::Login(l), "password") => l.password.clone(),
+        (Content::Login(l), "url") => l.urls.first().map(|u| u.url.clone()).unwrap_or_default(),
+        (Content::Login(l), "totp") => match &l.totp {
+            Some(t) => Totp::from_config(t)?.code_at(now).code,
+            None => return Err(CliError::new("this login has no one-time password")),
+        },
+        (_, "notes") => item.notes.clone(),
+        (Content::SshKey(k), "public_key") => k.public_key.clone(),
+        _ => return Err(CliError::new("unknown field for this item")),
+    };
+    Ok(zeroize::Zeroizing::new(value))
+}
+
+fn item_copy(query: &str, field: &str, password_stdin: bool) -> Result<()> {
+    let mut p = Profile::open()?;
+    let (unlocked, _) = unlock_and_sync(&mut p, password_stdin)?;
+    let items = p.items(&unlocked.vault)?;
+    let v = find(&items, query)?;
+    let now = u64::try_from(now_ms() / 1000).unwrap_or(0);
+    let value = field_value(&v.item, field, now)?;
+    if value.is_empty() {
+        return Err(CliError::new("that field is empty"));
+    }
+    let secs = clipboard::copy_and_schedule_clear(&value)?;
+    // Name only the field, never the value (design-principles "Copy").
+    let label = match field {
+        "password" => "Password",
+        "username" => "Username",
+        "totp" => "One-time password",
+        "notes" => "Notes",
+        "url" => "Website",
+        _ => "Value",
+    };
+    say(&format!("{label} copied. Clears in {secs} s."));
+    Ok(())
+}
+
 fn item_get(query: &str, field: Option<&str>, reveal: bool, password_stdin: bool) -> Result<()> {
     let mut p = Profile::open()?;
     let (unlocked, _) = unlock_and_sync(&mut p, password_stdin)?;
@@ -634,19 +695,7 @@ fn item_get(query: &str, field: Option<&str>, reveal: bool, password_stdin: bool
     };
     let now = u64::try_from(now_ms() / 1000).unwrap_or(0);
     if let Some(f) = field {
-        let value = match (&v.item.content, f) {
-            (Content::Login(l), "username") => l.username.clone(),
-            (Content::Login(l), "password") => l.password.clone(),
-            (Content::Login(l), "url") => l.urls.first().map(|u| u.url.clone()).unwrap_or_default(),
-            (Content::Login(l), "totp") => match &l.totp {
-                Some(t) => Totp::from_config(t)?.code_at(now).code,
-                None => return Err(CliError::new("this login has no one-time password")),
-            },
-            (_, "notes") => v.item.notes.clone(),
-            (Content::SshKey(k), "public_key") => k.public_key.clone(),
-            _ => return Err(CliError::new("unknown field for this item")),
-        };
-        say(&value);
+        say(&field_value(&v.item, f, now)?);
         return Ok(());
     }
     say(&format!("{} ({})", v.item.title, kind_label(&v.item)));
