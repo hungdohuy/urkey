@@ -42,6 +42,17 @@ pub struct Profile {
 
 pub const SECRET_KEY: &str = "secret_key";
 pub const DEVICE_SEED: &str = "device_seed";
+/// The bearer token lives in the secret store (Keychain on macOS), not in `vault.db` (review L-2).
+pub const SESSION_TOKEN: &str = "session_token";
+
+/// What `vault.db` keeps about the session: only its expiry. `session_token` is read only to
+/// migrate profiles written before review L-2, and is never written back.
+#[derive(Serialize, Deserialize)]
+struct SessionMeta {
+    expires_at: i64,
+    #[serde(default, skip_serializing)]
+    session_token: Option<String>,
+}
 
 pub fn now_ms() -> i64 {
     std::time::SystemTime::now()
@@ -57,13 +68,27 @@ impl Profile {
             .get("config")?
             .ok_or_else(|| CliError::new("Not set up yet. Run `urk init --server <url>` first."))?;
         let mut api = Api::new(&config.server);
-        if let Some(s) = store.get::<SessionResponse>("session")?
-            && s.expires_at > now_ms() + 30_000
-        {
-            api.token = Some(s.session_token);
+        let secrets = secrets::open(&dir);
+        if let Some(meta) = store.get::<SessionMeta>("session")? {
+            if let Some(legacy) = &meta.session_token {
+                // Older profile: move the token out of vault.db into the secret store.
+                secrets.set(SESSION_TOKEN, legacy.as_bytes())?;
+                store.put(
+                    "session",
+                    &SessionMeta {
+                        expires_at: meta.expires_at,
+                        session_token: None,
+                    },
+                )?;
+            }
+            if meta.expires_at > now_ms() + 30_000
+                && let Some(t) = secrets.get(SESSION_TOKEN)?
+            {
+                api.token = String::from_utf8(t.to_vec()).ok();
+            }
         }
         Ok(Self {
-            secrets: secrets::open(&dir),
+            secrets,
             store,
             api,
             config,
@@ -128,8 +153,17 @@ impl Profile {
     }
 
     pub fn save_session(&mut self, s: &SessionResponse) -> Result<()> {
+        self.secrets
+            .set(SESSION_TOKEN, s.session_token.as_bytes())?;
+        self.store.put(
+            "session",
+            &SessionMeta {
+                expires_at: s.expires_at,
+                session_token: None,
+            },
+        )?;
         self.api.token = Some(s.session_token.clone());
-        self.store.put("session", s)
+        Ok(())
     }
 
     pub fn challenge(

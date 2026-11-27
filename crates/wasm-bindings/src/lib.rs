@@ -31,6 +31,7 @@ use sync_core::vault_core::wire::{
 use sync_core::vault_core::{VaultError, export, ssh};
 use sync_core::{PullOutcome, Resolution, RotationSnapshot, SyncState, Write};
 use wasm_bindgen::prelude::*;
+use zeroize::Zeroizing;
 
 type JsResult<T> = Result<T, JsValue>;
 
@@ -179,10 +180,12 @@ impl Core {
     pub fn create_account(
         &mut self,
         email: &str,
-        password: &str,
+        password: String,
         device_json: &str,
         fast_kdf: bool,
     ) -> JsResult<String> {
+        let password_z = Zeroizing::new(password);
+        let password: &str = &password_z;
         let device: DeviceInfo = from_json(device_json)?;
         let params = if fast_kdf {
             KdfParams::new(KdfParams::MIN_M_KIB, KdfParams::MIN_T, 1)
@@ -224,13 +227,17 @@ impl Core {
     pub fn prepare_login(
         &mut self,
         prelogin_json: &str,
-        password: &str,
-        secret_key_text: &str,
+        password: String,
+        secret_key_text: String,
         challenge_id: &str,
         nonce: &str,
         device_json: &str,
         origin: &str,
     ) -> JsResult<String> {
+        let password_z = Zeroizing::new(password);
+        let password: &str = &password_z;
+        let secret_key_text_z = Zeroizing::new(secret_key_text);
+        let secret_key_text: &str = &secret_key_text_z;
         let pre: PreloginResponse = from_json(prelogin_json)?;
         let secret_key = encoding::parse_account_secret_key(secret_key_text)
             .map_err(|_| err("invalid: secret key"))?;
@@ -266,7 +273,11 @@ impl Core {
     }
 
     /// Unlocks with the master password and the Secret Key bytes (from the local wrap).
-    pub fn unlock(&mut self, password: &str, secret_key: &[u8]) -> JsResult<()> {
+    pub fn unlock(&mut self, password: String, secret_key: Vec<u8>) -> JsResult<()> {
+        let password_z = Zeroizing::new(password);
+        let password: &str = &password_z;
+        let secret_key_z = Zeroizing::new(secret_key);
+        let secret_key: &[u8] = &secret_key_z;
         let account = self
             .account
             .as_ref()
@@ -284,24 +295,31 @@ impl Core {
     /// account state. Next: pull every page, then `finish_rotation()`.
     pub fn unlock_with_rotation(
         &mut self,
-        password: &str,
-        secret_key: &[u8],
+        password: String,
+        secret_key: Vec<u8>,
         old_account_json: &str,
         new_account_json: &str,
     ) -> JsResult<()> {
+        let password_z = Zeroizing::new(password);
+        let password: &str = &password_z;
+        let secret_key_z = Zeroizing::new(secret_key);
+        let secret_key: &[u8] = &secret_key_z;
         self.set_account(old_account_json)?;
-        self.unlock(password, secret_key)?;
+        // `unlock` takes owned copies and wipes them; ours are wiped when this returns.
+        self.unlock(password.to_owned(), secret_key.to_vec())?;
         self.begin_rotation()?;
         self.set_account(new_account_json)?;
         let rotation = self.rotation.take();
-        let result = self.unlock(password, secret_key);
+        let result = self.unlock(password.to_owned(), secret_key.to_vec());
         self.rotation = rotation;
         result
     }
 
     /// Parses a typed Secret Key into its bytes (for the local wrap).
-    pub fn parse_secret_key(text: &str) -> JsResult<Vec<u8>> {
-        let k = encoding::parse_account_secret_key(text).map_err(|_| err("invalid: secret key"))?;
+    pub fn parse_secret_key(text: String) -> JsResult<Vec<u8>> {
+        let text = Zeroizing::new(text);
+        let k =
+            encoding::parse_account_secret_key(&text).map_err(|_| err("invalid: secret key"))?;
         Ok(k.expose_secret().to_vec())
     }
 
@@ -550,10 +568,14 @@ impl Core {
     pub fn restore_export(
         &mut self,
         json_text: &str,
-        password: &str,
-        secret_key_text: &str,
+        password: String,
+        secret_key_text: String,
         now: &str,
     ) -> JsResult<u32> {
+        let password_z = Zeroizing::new(password);
+        let password: &str = &password_z;
+        let secret_key_text_z = Zeroizing::new(secret_key_text);
+        let secret_key_text: &str = &secret_key_text_z;
         let file = export::parse(json_text.as_bytes()).map_err(verr)?;
         let ask = encoding::parse_account_secret_key(secret_key_text)
             .map_err(|_| err("invalid: secret key"))?;
@@ -631,7 +653,11 @@ impl Core {
     }
 
     /// Parses an OpenSSH private key into SSH item fields (R-SSH-1).
-    pub fn import_ssh(pem: &str, passphrase: &str) -> JsResult<String> {
+    pub fn import_ssh(pem: String, passphrase: String) -> JsResult<String> {
+        let passphrase_z = Zeroizing::new(passphrase);
+        let passphrase: &str = &passphrase_z;
+        let pem_z = Zeroizing::new(pem);
+        let pem: &str = &pem_z;
         let pass = (!passphrase.is_empty()).then_some(passphrase);
         to_json(&ssh::import_openssh(pem, pass).map_err(verr)?)
     }
@@ -734,7 +760,9 @@ impl Core {
     }
 
     /// Prepares a master password change (R-ACC-6). Returns the payload JSON.
-    pub fn prepare_password_change(&mut self, new_password: &str) -> JsResult<String> {
+    pub fn prepare_password_change(&mut self, new_password: String) -> JsResult<String> {
+        let new_password_z = Zeroizing::new(new_password);
+        let new_password: &str = &new_password_z;
         let vault = self.vault()?;
         let ask = self.secret_key.as_ref().ok_or_else(|| err("locked"))?;
         let change =
@@ -745,7 +773,9 @@ impl Core {
     }
 
     /// Prepares a Secret Key rotation (R-ACC-7). Returns `{payload, secret_key_text}`.
-    pub fn prepare_secret_key_rotation(&mut self, password: &str) -> JsResult<String> {
+    pub fn prepare_secret_key_rotation(&mut self, password: String) -> JsResult<String> {
+        let password_z = Zeroizing::new(password);
+        let password: &str = &password_z;
         let vault = self.vault()?;
         let change =
             account::rotate_secret_key(vault, password, KdfParams::DEFAULT).map_err(verr)?;
@@ -770,7 +800,9 @@ impl Core {
 
     /// Prepares a vault-key rotation (R-DEV-3) over every item this device has. Returns
     /// `{payload, recovery_key_text}`. Sync first so `expected_vault_seq` is current.
-    pub fn prepare_rekey(&mut self, password: &str, expected_vault_seq: f64) -> JsResult<String> {
+    pub fn prepare_rekey(&mut self, password: String, expected_vault_seq: f64) -> JsResult<String> {
+        let password_z = Zeroizing::new(password);
+        let password: &str = &password_z;
         let account = self
             .account
             .as_ref()
@@ -805,17 +837,19 @@ impl Core {
 
     /// Call after the server accepted a prepared change, with the new account state. Returns the
     /// new Secret Key bytes (base64url) when it changed, so the app can re-wrap it locally.
-    pub fn commit_change(&mut self, account_json: &str) -> JsResult<String> {
+    /// Returns the new Secret Key's bytes if this change created one (empty otherwise); the
+    /// caller wraps them for local storage and then wipes them.
+    pub fn commit_change(&mut self, account_json: &str) -> JsResult<Vec<u8>> {
         let state: AccountState = from_json(account_json)?;
         let pending = self
             .pending
             .take()
             .ok_or_else(|| err("invalid: nothing to commit"))?;
-        let mut new_secret = String::new();
+        let mut new_secret = Vec::new();
         match pending {
             PendingChange::Unlock(c) => {
                 if let Some(k) = c.secret_key {
-                    new_secret = b64::encode(k.expose_secret());
+                    new_secret = k.expose_secret().to_vec();
                     self.secret_key = Some(k);
                 }
                 if let Some(u) = self.unlocked.as_mut() {
@@ -831,7 +865,7 @@ impl Core {
                 sync_core::begin_resync(&mut self.sync);
             }
             PendingChange::Recover(s) => {
-                new_secret = b64::encode(s.secret_key.expose_secret());
+                new_secret = s.secret_key.expose_secret().to_vec();
                 let vault = self
                     .recovery_vault
                     .take()
@@ -860,10 +894,12 @@ impl Core {
         account_id: &str,
         challenge_id: &str,
         nonce: &str,
-        recovery_key_text: &str,
+        recovery_key_text: String,
         device_json: &str,
         origin: &str,
     ) -> JsResult<String> {
+        let recovery_key_text_z = Zeroizing::new(recovery_key_text);
+        let recovery_key_text: &str = &recovery_key_text_z;
         let rk = encoding::parse_recovery_key(recovery_key_text)
             .map_err(|_| err("invalid: recovery key"))?;
         let account_id =
@@ -888,8 +924,10 @@ impl Core {
         account_id: &str,
         vmk_id: &str,
         recovery_env: &str,
-        recovery_key_text: &str,
+        recovery_key_text: String,
     ) -> JsResult<()> {
+        let recovery_key_text_z = Zeroizing::new(recovery_key_text);
+        let recovery_key_text: &str = &recovery_key_text_z;
         let rk: RecoveryKey = encoding::parse_recovery_key(recovery_key_text)
             .map_err(|_| err("invalid: recovery key"))?;
         let vault = account::open_recovery(
@@ -904,7 +942,9 @@ impl Core {
     }
 
     /// New credentials after recovery (R-REC-2). Returns `{payload, secret_key_text, recovery_key_text}`.
-    pub fn prepare_recovery_setup(&mut self, new_password: &str) -> JsResult<String> {
+    pub fn prepare_recovery_setup(&mut self, new_password: String) -> JsResult<String> {
+        let new_password_z = Zeroizing::new(new_password);
+        let new_password: &str = &new_password_z;
         let vault = self
             .recovery_vault
             .as_ref()

@@ -112,6 +112,11 @@ Algorithm choices (accepted; exact details in the crypto spec):
 ## 5. WASM boundary
 
 - JS receives **opaque handles** (e.g. an unlocked-session handle), never raw keys.
+  **One exception:** the Account Secret Key passes through the core worker's JS, because the
+  local wrap (crypto §8.1, ADR 0006) uses a non-extractable WebCrypto key. It crosses only as a
+  `Uint8Array` that is wiped right after the wrap or unwrap. On the WASM side, every password or
+  key argument is taken as an owned value and wiped when the call ends (`Zeroizing`;
+  zero-knowledge review L-1).
 - Exposed operations are coarse: `create_account`, `unlock`, `lock`, `decrypt_item_for_display`,
   `encrypt_item`, `totp_now`, `generate_password`, sync step functions.
 - Plaintext field values cross into JS only when the UI must show or copy them.

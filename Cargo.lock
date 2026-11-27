@@ -2067,6 +2067,7 @@ dependencies = [
  "serde_json",
  "sync-core",
  "wasm-bindgen",
+ "zeroize",
 ]
 
 [[package]]

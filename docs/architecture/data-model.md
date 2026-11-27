@@ -141,7 +141,7 @@ Other record types:
 
 | Record | Contents | Where |
 |--------|----------|-------|
-| `AccountState` | `account_id`, `kdf_salt`, `kdf_params`, `auth_pk`, `unlock_env`, `vmk_id`, `keyset_version`, `vault_seq`, `min_client_version` | Server → client (recovery envelope is returned only to recovery sessions) |
+| `AccountState` | `account_id`, `kdf_salt`, `kdf_params`, `auth_pk`, `rauth_pk`, `unlock_env`, `vmk_id`, `keyset_version`, `vault_seq`, `min_client_version` | Server → client (recovery envelope is returned only to recovery sessions) |
 | `DeviceRecord` | `device_id`, `name`, `platform`, `client_version`, `created_at`, `last_seen_at`, `revoked_at` | Server → client |
 | `SecurityEvent` | `seq`, `kind`, `device_id`, `created_at` | Server → client, in the change feed |
 | `Snapshot` | `snapshot_id`, size, `vmk_id`, `created_at`; object body (container kind 0x07) in R2 | Server |

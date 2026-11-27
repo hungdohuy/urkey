@@ -60,7 +60,7 @@ changes need a step-up signature.
 turn invocation logs off (keep only explicit logs, of which there are none), or turn
 observability off.
 
-### L-1 The raw Secret Key crosses the WASM boundary into JavaScript
+### L-1 The raw Secret Key crosses the WASM boundary into JavaScript — **fixed 2026-11-27**
 Overview §5 says JavaScript gets "opaque handles, never raw keys". Because the local wrap uses
 WebCrypto (ADR 0006), the ASK passes through the core worker's JS:
 - `Core.parse_secret_key` returns its bytes;
@@ -83,7 +83,7 @@ password at unlock (T-13, accepted). This is a gap between the spec and the code
 - take owned `String`/`Vec<u8>` arguments in `wasm-bindings` and wrap them in `Zeroizing`, so
   the WASM-side copies are wiped.
 
-### L-2 The CLI stores its session token in plaintext
+### L-2 The CLI stores its session token in plaintext — **fixed 2026-11-27**
 `urk` keeps the session token in `vault.db` (SQLite, mode 0600; `profile.rs` `save_session`),
 while the Secret Key and device key use the Keychain on macOS. Another process running as the
 same user could read the token. That's the same impact as M-2, limited to that device.
@@ -113,3 +113,19 @@ same user could read the token. That's the same impact as M-2, limited to that d
   review, O-9.
 - Side channels, WebAssembly memory forensics, browser extensions, and the macOS/iOS native apps
   (not built yet).
+
+## 6. Follow-up (2026-11-27)
+
+- **L-1 fixed.**
+  - Every password, Secret Key, Recovery Key, SSH key and passphrase argument of
+    `wasm-bindings` is now an owned `String`/`Vec<u8>`, wrapped in `Zeroizing`.
+  - `commit_change` returns the new Secret Key as bytes instead of base64 text.
+  - `wrapSecretKey` wipes its WebCrypto copy as well.
+  - Overview §5 records the WebCrypto exception.
+  - A new browser test rotates the Secret Key and unlocks again.
+- **L-2 fixed.**
+  - The CLI keeps only the session expiry in `vault.db`. The token is in the secret store
+    (Keychain on macOS).
+  - Older profiles are migrated on first use.
+  - `cli_e2e.sh` checks that `vault.db` holds no token.
+- **M-1, M-2:** open, waiting on the owner (PROGRESS O-13).

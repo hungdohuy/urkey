@@ -19,6 +19,8 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 sync-core.workspace = true
 wasm-bindgen.workspace = true
+# Wipes the WASM-side copies of passwords and keys passed in from JS (review L-1).
+zeroize = "1.9.2"
 
 [package.metadata.wasm-pack.profile.release]
 # binaryen 108 (the version apt provides) breaks wasm-bindgen 0.2.130 reference-types tables;

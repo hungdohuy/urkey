@@ -43,7 +43,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | O-9 | Arrange the independent security review | Required before real credentials (M2) | crypto spec §13, threat model §6/§9a |
 | O-11 | Update the phase section in `CLAUDE.md` (it still says P2–P7) | You own that section | `CLAUDE.md` |
 | O-12 | Check layouts on a real phone and tablet (Playwright covers desktop Chrome) | R-UX-1 | `docs/ux/screens.md` §8 |
-| O-13 | Decide the 2026-11-27 zero-knowledge review findings: M-1 (account creation reveals registered emails), M-2 (check Cloudflare logs before deploy), L-1/L-2 (small hardening) | Review follow-up | `docs/security/reviews/2026-11-27-zero-knowledge-review.md` |
+| O-13 | Decide the 2026-11-27 zero-knowledge review findings: M-1 (account creation reveals registered emails: accept, or add email verification) and M-2 (check whether Cloudflare logs record the Authorization header, before deploying) | Review follow-up (L-1, L-2 fixed) | `docs/security/reviews/2026-11-27-zero-knowledge-review.md` |
 
 ## Phases
 
@@ -150,6 +150,10 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-27 (e)** — Fixed review L-1 (WASM secret arguments wiped; the new Secret Key returned as wipeable
+  bytes; the extra WebCrypto copy wiped; new e2e test for Secret Key rotation) and L-2 (CLI session token in
+  the secret store / Keychain). M-1 and M-2 left for the owner.
 
 - **2026-11-27 (d)** — Zero-knowledge self-review: the core property holds (no critical or high findings);
   2 medium and 2 low findings written up for the owner (O-13). It does not replace the independent review (O-9).

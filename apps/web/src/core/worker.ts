@@ -86,7 +86,15 @@ async function localWrapKey(): Promise<CryptoKey> {
 async function wrapSecretKey(c: Core, accountId: string, ask: Uint8Array): Promise<void> {
   const ctx = JSON.parse(c.local_wrap_context(accountId)) as { header: string; aad: string };
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: decode(ctx.aad) }, await localWrapKey(), new Uint8Array(ask)));
+  // WebCrypto needs its own buffer; wipe it too, not only the caller's copy (review L-1).
+  const plain = new Uint8Array(ask);
+  let ct: Uint8Array;
+  try {
+    ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: decode(ctx.aad) }, await localWrapKey(), plain));
+  } finally {
+    plain.fill(0);
+    ask.fill(0);
+  }
   const header = decode(ctx.header);
   const out = new Uint8Array(header.length + iv.length + ct.length);
   out.set(header, 0);
@@ -535,7 +543,9 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
       }
       const ask = c.commit_change(JSON.stringify(r.account));
       await idb.put("kv", "account", r.account);
-      if (config !== null && ask !== "") await wrapSecretKey(c, config.accountId, decode(ask));
+      // The new Secret Key arrives as bytes so it can be wiped (wrapSecretKey wipes it).
+      if (config !== null && ask.length > 0) await wrapSecretKey(c, config.accountId, ask);
+      else ask.fill(0);
     } catch (e) {
       c.discard_change();
       throw e;
@@ -632,7 +642,7 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
     const a = await fetchAccount();
     const ask = core.commit_change(JSON.stringify(a.account));
     core.load_sync("");
-    await afterSignIn(core, config, a.account, decode(ask));
+    await afterSignIn(core, config, a.account, ask);
     return { secretKeyText: out.secret_key_text, recoveryKeyText: out.recovery_key_text };
   },
 

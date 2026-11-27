@@ -46,6 +46,9 @@ printf '%s\n' "$PASSWORD" | u1 item add-login --title "Example login" --username
 WRONG=$(printf 'wrong password\n' | u1 item list --password-stdin 2>&1 || true)
 grep -q "Couldn't unlock" <<<"$WRONG" || fail "wrong password was not refused"
 
+# The session token lives in the secret store (Keychain on macOS), never in vault.db (review L-2).
+if grep -aq '"session_token"' "$D1/vault.db"; then fail "session token stored in vault.db"; fi
+
 step "device 2: sign in and see the login"
 u2 init --server "http://localhost:$PORT" --name "E2E desktop" >/dev/null
 printf '%s\n%s\n' "$PASSWORD" "$SECRET" | u2 login --email "$EMAIL" --password-stdin

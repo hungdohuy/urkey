@@ -960,6 +960,7 @@ fn forget(yes: bool) -> Result<()> {
             p.api.post("/v1/auth/logout", &serde_json::json!({}));
         let _ = p.secrets.delete(profile::SECRET_KEY);
         let _ = p.secrets.delete(profile::DEVICE_SEED);
+        let _ = p.secrets.delete(profile::SESSION_TOKEN);
         p.api.token = None;
     }
     for f in ["vault.db", "secrets.json", "secrets.tmp"] {

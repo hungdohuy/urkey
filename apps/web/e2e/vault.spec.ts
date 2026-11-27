@@ -150,6 +150,23 @@ test.describe.serial("urkey in the browser", () => {
     await unlock(device1, NEW_PASSWORD);
   });
 
+  test("change the Secret Key: this device re-wraps it locally and still unlocks", async () => {
+    await device1.getByRole("button", { name: "Settings" }).click();
+    await device1.getByRole("button", { name: "Change Secret Key" }).click();
+    await device1.getByLabel("Master password", { exact: true }).fill(NEW_PASSWORD);
+    await device1.getByRole("button", { name: "Continue" }).click();
+    const newKey = (await device1.getByTestId("kit-secret-key").textContent()) ?? "";
+    expect(newKey).toMatch(/^UK1-/);
+    expect(newKey).not.toBe(secretKey);
+    await device1.getByLabel(/last 4 characters/).fill(newKey.replace(/-/g, "").slice(-4));
+    await device1.getByRole("button", { name: "Done" }).click();
+    secretKey = newKey;
+    // The new Secret Key came back from the core as bytes and was wrapped locally (review L-1).
+    await device1.keyboard.press("Shift+L");
+    await unlock(device1, NEW_PASSWORD);
+    await expect(device1.getByRole("option", { name: /Example site/ })).toBeVisible();
+  });
+
   test("change the vault key: items stay readable", async () => {
     await device1.getByRole("button", { name: "Settings" }).click();
     await device1.getByRole("button", { name: "Change vault key" }).click();
