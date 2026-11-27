@@ -3,7 +3,7 @@
 > **Project:** Personal, developer-focused password manager\
 > **Primary goal:** Build a secure, local-first password manager with a
 > polished user experience inspired by the interaction patterns and
-> visual quality of 1Password, while maintaining an independent
+> visual quality of established password managers, while maintaining an independent
 > implementation and architecture.
 
 ## 1. Your role
@@ -28,7 +28,7 @@ significant architectural changes.
 Build a personal password manager for an individual developer. It should
 combine:
 
--   A polished, intuitive vault experience inspired by 1Password.
+-   A polished, intuitive vault experience inspired by established password managers.
 -   End-to-end encrypted storage and synchronization.
 -   A strong account recovery mechanism.
 -   TOTP authenticator functionality.
@@ -42,9 +42,9 @@ The product is primarily for individual use. Do not introduce
 enterprise, family-sharing, or multi-tenant complexity unless explicitly
 requested.
 
-## 3. UI/UX direction: use 1Password as the reference
+## 3. UI/UX direction: use established password managers as the reference
 
-Use **1Password as a product-quality and interaction reference**, not as
+Use **established password managers as a product-quality and interaction reference**, not as
 a source to copy its proprietary assets, branding, text, or
 implementation.
 
@@ -221,7 +221,7 @@ Specify and justify:
 -   Error handling that does not leak secrets.
 -   Test vectors and cross-platform interoperability tests.
 
-Do not claim equivalence to 1Password's internal cryptographic design.
+Do not claim equivalence to any other product's internal cryptographic design.
 Use public standards and an independently reviewed design.
 
 ### 6.3 Critical rules
@@ -384,7 +384,7 @@ Maintain these documents and update them as decisions are made:
     encryption, and envelope formats.
 -   `docs/security/recovery.md` --- Recovery, rotation, and device
     lifecycle.
--   `docs/ux/design-principles.md` --- 1Password-inspired UX principles
+-   `docs/ux/design-principles.md` --- UX principles
     and original design system.
 -   `docs/decisions/` --- Architecture Decision Records.
 
@@ -426,8 +426,8 @@ Produce:
 6.  Vault item and encrypted-envelope data models.
 7.  Device enrollment and revocation design.
 8.  Synchronization protocol and conflict strategy.
-9.  UX specification referencing 1Password's general interaction
-    patterns, with original screens and components.
+9.  UX specification referencing the general interaction patterns of
+    established password managers, with original screens and components.
 10. ADRs for major technology and security decisions.
 11. Phased implementation roadmap with testable acceptance criteria.
 12. List of unresolved decisions and the recommended choices.
