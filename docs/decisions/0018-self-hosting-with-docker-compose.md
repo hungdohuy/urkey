@@ -61,7 +61,8 @@ review has to cover separately.
 - **Release hashes differ between build environments.** The WASM file embeds build paths, so an
   image build does not reproduce the CI hash. A possible fix is `--remap-path-prefix` in every
   build (follow-up).
-- **Restoring an older backup trips the rollback protection** (T-9) on devices that synced
-  later. There's a documented recovery (export, re-sign-in, restore). A real "trust the server
-  again" flow is a sync-spec gap (PROGRESS O-14).
+- **Restoring an older backup needs a resync on every device.** Devices that synced later see a
+  rollback warning, but others may see none and miss changes (review N-1). "Accept the server's
+  data and resync" (web, `urk sync --resync`) repairs both without losing what a device had
+  (sync.md §7.1, owner decision O-14). A protocol-level detection is open (PROGRESS O-15).
 - **Test data only until M2.** This rule applies to self-hosting too.

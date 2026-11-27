@@ -105,7 +105,7 @@ export interface Methods {
   resolveConflict: { params: { id: string; choice: "server" | "local" | "both" }; result: null };
   events: { params: undefined; result: SecurityEvent[] };
   ackEvent: { params: { seq: number }; result: null };
-  clearRollback: { params: undefined; result: null };
+  resyncFromServer: { params: undefined; result: SyncStatus };
   account: { params: undefined; result: { account: Record<string, unknown>; devices: DeviceRecord[]; thisDevice: string } };
   changePassword: { params: { newPassword: string }; result: null };
   // `confirmed: false`: the server could not be reached to confirm the change (R-REC-3). The new

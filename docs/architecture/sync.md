@@ -173,7 +173,37 @@ security notice is shown, and sync continues for other items.
 
 Feed-level checks: the server's `vault_seq` must never be lower than `highest_vault_seq_seen`;
 `keyset_version` must never decrease. A decrease shows a "server returned older data" warning
-and stops pushing until the user acknowledges.
+and stops pushing until the user acknowledges (§7.1).
+
+### 7.1 Accepting the server's data after a rollback (owner decision O-14)
+
+The usual cause is an operator restoring an older backup (self-hosting, `docs/operations/
+selfhost.md`); a malicious server is the other possible cause (T-9). Only the user can tell
+which, so the client never decides alone. When the user accepts ("accept its data and resync" in
+the web app, `urk sync --resync` in the CLI):
+1. Remember this device's own records (ciphertext only, `rollback_snapshot`).
+2. Forget `highest_vault_seq_seen`, `keyset_version` and the known revisions, clear the warning,
+   and run a full resync as in §8.1. Pending edits are kept.
+3. When the pull is done, compare each remembered record with what the server holds, and queue
+   what would otherwise be lost:
+
+| This device had | The server now has | Queued |
+|-----------------|--------------------|--------|
+| the item | nothing | the item again, **under its old id** (so several devices doing this agree on one item) |
+| revision *r* | an older revision with different content | this device's content on top of the server's version (normal push and conflict rules apply if another device does the same) |
+| revision *r* | the same or a newer revision with different content | a separate copy, titled "… (this device's copy)", so nothing from either side is lost |
+| the item | the same content | nothing |
+| a deletion | the item | nothing (the server's version stays) |
+
+Items that already have pending edits or an open conflict are left to those mechanisms.
+
+The same action is available at any time (web: Settings › Backup › "Resync from the server";
+CLI: `urk sync --resync`), because **a rollback is not always detected**: if other devices write
+to the restored server until its `vault_seq` is back at or above what this device has seen, no
+warning appears, and this device never receives the changes that reuse sequence numbers it
+already passed (§5's cursor skips them). Operators who restore a backup should tell users to
+run the resync on every device. A protocol-level fix (a server epoch in the feed) is a possible
+follow-up.
 
 ## 8. Special situations
 

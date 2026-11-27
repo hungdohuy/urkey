@@ -216,6 +216,13 @@ impl Profile {
         Ok(self.store.get("sync")?.unwrap_or_default())
     }
 
+    /// Accepts the server's data and starts a full resync (sync.md §7.1); the next `sync` runs it.
+    pub fn accept_server_rollback(&self) -> Result<()> {
+        let mut state = self.sync_state()?;
+        sync_core::accept_server_rollback(&mut state);
+        self.save_sync_state(&state)
+    }
+
     pub fn save_sync_state(&self, s: &SyncState) -> Result<()> {
         self.store.put("sync", s)
     }

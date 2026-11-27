@@ -39,14 +39,14 @@ medium and two low findings concern things around the vault, not the vault itsel
 
 ## 2. Findings
 
-### M-1 Account creation reveals whether an email is registered
+### M-1 Account creation reveals whether an email is registered — **accepted 2026-11-27**
 `POST /v1/accounts` answers `409 email_taken` (`handlers/auth.ts:71`). Prelogin and challenge
 were built so that they reveal nothing (T-17), but this endpoint does. It is rate-limited to
 10 attempts per hour per IP, which slows bulk enumeration but does not stop it.
 **Impact:** an attacker can learn that someone uses urkey. Vault data is not exposed.
 **Options:** (a) accept it and record it in threat-model T-17 (common for products without email
 verification); (b) add email verification, so that "create" always answers "check your inbox".
-**Owner decision.**
+**Owner decision: option (a), accepted 2026-11-27.** Recorded in threat model T-17 and §10 residual risks.
 
 ### M-2 Cloudflare observability may log session tokens
 `observability: { enabled: true }` is set in `cloud/workers/api/cloudflare.config.ts`. Whether
@@ -129,3 +129,27 @@ same user could read the token. That's the same impact as M-2, limited to that d
   - Older profiles are migrated on first use.
   - `cli_e2e.sh` checks that `vault.db` holds no token.
 - **M-1, M-2:** open, waiting on the owner (PROGRESS O-13).
+
+## 7. Follow-up (2026-11-27, later): O-14 and a finding from testing it
+
+- **M-1** is accepted by the owner (see above).
+- **O-14 implemented.** "Accept the server's data and resync" (web, `urk sync --resync`)
+  re-offers what the device had instead of discarding it: sync.md §7.1; tests in
+  `crates/sync-core/tests/simulation.rs` and `tests/integration/selfhost_restore.sh`.
+- **N-1 (low, found while testing): a rollback is not always detected.** The check only fires
+  when the server's `vault_seq` is *lower* than the device's highest seen. After a restore,
+  writes from other devices can raise it back to or past that value. A device then keeps its
+  cursor and **never receives the changes whose sequence numbers it had already passed**,
+  without any warning. This is the "a client that has never seen the newer state cannot detect
+  withholding" limit of T-9, in a restore setting. It cannot lose data (the server and the
+  other devices hold the changes) but a device shows stale content. Mitigation today: a
+  manual resync is always available (Settings › Backup, `urk sync --resync`), and the
+  self-hosting guide tells operators to run it on every device after a restore. A
+  protocol-level fix, such as a per-account epoch in the change feed that a restore cannot
+  reproduce, needs an API and sync-spec change; left for the owner (PROGRESS O-15).
+- **N-2 (low, found while testing): the web app cannot re-register a device after a restore.**
+  A device enrolled after the backup is unknown to the restored server, so refresh fails with
+  `unauthorized`. The CLI recovers with `urk login` (local data is kept). The web app's only
+  path is to sign out (which wipes local data) and sign in anew, so a user must export first or
+  newer items that only that device had can be lost. Mitigated by the self-hosting guide; a
+  "sign this device in again, keeping local data" flow would remove the risk (PROGRESS O-15).

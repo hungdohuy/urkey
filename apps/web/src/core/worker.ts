@@ -498,11 +498,11 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
     return null;
   },
 
-  async clearRollback() {
-    need().clear_rollback_warning();
+  /** Accept the server's data and pull everything again (sync.md §7.1); newer local content is offered again. */
+  async resyncFromServer() {
+    need().accept_server_rollback();
     await saveSync();
-    await refreshStatus();
-    return null;
+    return syncNow();
   },
 
   async account() {

@@ -113,6 +113,19 @@ pub fn seal_new(key: &VaultKey, item: &Item) -> Result<(ItemRecord, ItemKey)> {
     Ok((record, item_key))
 }
 
+/// Encrypts an item as revision 1 under an id it already had, with a fresh item key. Used to put
+/// an item back on a server that lost it (sync.md §7.1): devices that do the same converge on one
+/// item instead of each making a copy.
+pub fn seal_new_with_id(
+    key: &VaultKey,
+    item_id: ItemId,
+    item: &Item,
+) -> Result<(ItemRecord, ItemKey)> {
+    let item_key = ItemKey::generate()?;
+    let record = seal(key, item_id, &item_key, 1, Some(item))?;
+    Ok((record, item_key))
+}
+
 /// Encrypts the next revision of an existing item.
 pub fn seal_update(
     key: &VaultKey,

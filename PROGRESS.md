@@ -43,8 +43,8 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | O-9 | Arrange the independent security review | Required before real credentials (M2) | crypto spec §13, threat model §6/§9a |
 | O-11 | Update the phase section in `CLAUDE.md` (it still says P2–P7) | You own that section | `CLAUDE.md` |
 | O-12 | Check layouts on a real phone and tablet (Playwright covers desktop Chrome) | R-UX-1 | `docs/ux/screens.md` §8 |
-| O-13 | Decide the 2026-11-27 zero-knowledge review findings: M-1 (account creation reveals registered emails: accept, or add email verification) and M-2 (check whether Cloudflare logs record the Authorization header, before deploying) | Review follow-up (L-1, L-2 fixed) | `docs/security/reviews/2026-11-27-zero-knowledge-review.md` |
-| O-14 | Decide what "resume syncing" after a rollback warning should do. Today it only clears the flag, and the next pull raises it again, so a device stays paused after a real server rollback (e.g. restoring an older self-hosted backup). Proposed: accept the server's state (reset the highest seen `vault_seq`, full resync) and keep local-only items as conflicts, not deletions | Sync-spec gap found while testing backup/restore | `docs/architecture/sync.md` §7, `docs/operations/selfhost.md` |
+| O-13 | Decide the remaining 2026-11-27 review finding: M-2 (before deploying to Cloudflare, check whether its request logs record the Authorization header; if so turn request logging off). M-1 was accepted on 2026-11-27 (threat model T-17); L-1 and L-2 are fixed | Review follow-up | `docs/security/reviews/2026-11-27-zero-knowledge-review.md` |
+| O-15 | Decide whether to close two restore-related findings at the product level. **N-1:** a rollback is not always detected (other devices' writes can raise `vault_seq` back past what a device saw); proposed: a per-account epoch in the change feed that a restore cannot reproduce. **N-2:** the web app cannot re-register a device after a restore without wiping its local copy (the CLI can: `urk login`); proposed: a “sign this device in again, keeping local data” flow. Today both are documented, with a manual resync and export-first guidance | Review findings N-1, N-2 | zero-knowledge review §7, `docs/operations/selfhost.md`, `docs/architecture/sync.md` §7.1 |
 
 ## Phases
 
@@ -151,6 +151,11 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-27 (g)** — Owner accepted M-1 and decided O-14 as proposed. Implemented "accept the server's data and
+  resync" (sync-core, WASM, web button + permanent Settings › Backup button, `urk sync --resync`): the device's own
+  newer content is put back, items only it had are recreated under their old ids, and conflicting content is kept as a copy. Found N-1:
+  a rollback is not always detected (now O-15). Tests: 3 new sync simulations, `selfhost_restore.sh`.
 
 - **2026-11-27 (f)** — Self-hosting with Docker Compose (ADR 0018).
   - Setup: `compose.yaml`; Caddy plus the Worker in workerd via Miniflare, D1 in a volume; dev tooling off, API reachable only via Caddy.

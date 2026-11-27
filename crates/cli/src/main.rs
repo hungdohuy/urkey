@@ -81,6 +81,10 @@ enum Command {
     Sync {
         #[arg(long)]
         password_stdin: bool,
+        /// Accept the server's data and pull everything again. Use it after the server was
+        /// restored from an older backup. Newer content that only this device has is sent back.
+        #[arg(long)]
+        resync: bool,
     },
     /// Vault items.
     #[command(subcommand)]
@@ -244,7 +248,10 @@ fn run(cli: Cli) -> Result<()> {
         } => unlock(minutes, password_stdin),
         Command::Lock => lock(),
         Command::Status => status(),
-        Command::Sync { password_stdin } => sync(password_stdin),
+        Command::Sync {
+            password_stdin,
+            resync,
+        } => sync(password_stdin, resync),
         Command::Item(ItemCmd::List {
             query,
             password_stdin,
@@ -402,7 +409,8 @@ fn unlock_and_sync(
     let mut unlocked = p.unlock(&password)?;
     match p.sync(&mut unlocked, &password) {
         Ok(s) if s.rollback => output::err(
-            "Warning: the server returned older data than this device has seen. Syncing is paused.",
+            "Warning: the server returned older data than this device has seen. Syncing is paused. \
+             If it was restored from an older backup, run `urk sync --resync`.",
         ),
         Ok(s) if s.quarantined > 0 => {
             output::err("Warning: some records failed integrity checks and were not applied.")
@@ -560,10 +568,13 @@ fn status() -> Result<()> {
     Ok(())
 }
 
-fn sync(password_stdin: bool) -> Result<()> {
+fn sync(password_stdin: bool, resync: bool) -> Result<()> {
     let mut p = Profile::open()?;
     let password = read_password(password_stdin, "Master password: ")?;
     let mut unlocked = p.unlock(&password)?;
+    if resync {
+        p.accept_server_rollback()?;
+    }
     let s = p.sync(&mut unlocked, &password)?;
     say(&format!(
         "Synced: {} received, {} sent, {} pending, {} conflict(s).",
@@ -574,7 +585,8 @@ fn sync(password_stdin: bool) -> Result<()> {
     }
     if s.rollback {
         return Err(CliError::new(
-            "the server returned older data than this device has seen; syncing is paused",
+            "the server returned older data than this device has seen; syncing is paused. If the \
+             server was restored from an older backup, run `urk sync --resync`.",
         ));
     }
     Ok(())

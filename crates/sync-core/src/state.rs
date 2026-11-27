@@ -100,4 +100,9 @@ pub struct SyncState {
     pub rollback_warning: bool,
     /// Set while a full resync is in progress.
     pub resyncing: bool,
+    /// This device's own records (ciphertext only) from before the user accepted a server
+    /// rollback (sync.md §7.1). After the full pull they are compared with the server's and any
+    /// newer content is offered again. Empty except during that resync.
+    #[serde(default)]
+    pub rollback_snapshot: Vec<WireRecord>,
 }

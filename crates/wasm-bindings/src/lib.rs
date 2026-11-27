@@ -723,8 +723,11 @@ impl Core {
         }
     }
 
-    pub fn clear_rollback_warning(&mut self) {
-        self.sync.rollback_warning = false;
+    /// Accepts the server's data after a rollback warning, or on demand after a server restore
+    /// (sync.md §7.1): forgets the highest sequence seen and starts a full resync. This device's
+    /// own newer content is offered again once the pull is done. Next: run a normal sync.
+    pub fn accept_server_rollback(&mut self) {
+        sync_core::accept_server_rollback(&mut self.sync);
     }
 
     // ---------------------------------------------------------------- step-up key changes

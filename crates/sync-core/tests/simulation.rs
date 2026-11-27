@@ -555,6 +555,176 @@ fn feed_rollback_pauses_pushing() {
     assert!(prepare_push(&mut a.state, 10).is_none());
 }
 
+/// Server contents as an operator's backup would restore them.
+struct Backup {
+    seq: u64,
+    items: BTreeMap<String, WireRecord>,
+    events: Vec<(u64, WireEvent)>,
+    seen: HashMap<Vec<u8>, (WireMutation, PushResult)>,
+    applied: Vec<B64>,
+}
+
+fn backup(server: &Server) -> Backup {
+    Backup {
+        seq: server.seq,
+        items: server.items.clone(),
+        events: server.events.clone(),
+        seen: server.seen.clone(),
+        applied: server.applied.clone(),
+    }
+}
+
+fn restore(server: &mut Server, b: &Backup) {
+    server.seq = b.seq;
+    server.items = b.items.clone();
+    server.events = b.events.clone();
+    server.seen = b.seen.clone();
+    server.applied = b.applied.clone();
+}
+
+fn server_notes(key: &VaultKey, server: &Server) -> Vec<String> {
+    let mut v: Vec<String> = server
+        .items
+        .values()
+        .filter_map(|r| read(key, &record_from_wire(r).unwrap()))
+        .collect();
+    v.sort();
+    v
+}
+
+/// O-14: after the operator restores an older backup, "accept the server's data" must not lose
+/// what this device had: newer edits are put back, and items only it had are created again.
+#[test]
+fn accepting_a_server_rollback_reoffers_what_the_device_had() {
+    let key = test_key();
+    let mut server = Server::new(&key.vmk_id);
+    let (mut a, id) = one_device_with_item(&key, &mut server); // server: "v1" at revision 1
+    let saved = backup(&server);
+    // After the backup: an edit and a new item, both synced from this device.
+    write(&mut a.state, &key, Write::Update(id, &note("v2"))).unwrap();
+    write(&mut a.state, &key, Write::Create(&note("only here"))).unwrap();
+    sync(&mut a, &key, &mut server, false);
+    assert_eq!(server_notes(&key, &server), ["only here", "v2"]);
+    // The operator restores the old backup.
+    restore(&mut server, &saved);
+    assert_eq!(server_notes(&key, &server), ["v1"]);
+
+    sync(&mut a, &key, &mut server, false);
+    assert!(a.state.rollback_warning, "the rollback is detected");
+    assert!(
+        prepare_push(&mut a.state, 10).is_none(),
+        "and pushing is paused"
+    );
+
+    accept_server_rollback(&mut a.state);
+    assert!(!a.state.rollback_warning);
+    sync(&mut a, &key, &mut server, false);
+    assert!(!a.state.rollback_warning, "the warning does not come back");
+    assert!(a.state.outbox.is_empty() && a.state.conflicts.is_empty());
+    assert!(a.state.rollback_snapshot.is_empty());
+    assert_eq!(server_notes(&key, &server), ["only here", "v2"]);
+
+    // A device that never saw any of this converges to the same content.
+    let mut b = Device {
+        state: SyncState::default(),
+        online: true,
+    };
+    sync(&mut b, &key, &mut server, false);
+    let b_notes: Vec<String> = {
+        let mut v: Vec<String> = effective(&b.state)
+            .unwrap()
+            .values()
+            .filter_map(|e| read(&key, &e.record))
+            .collect();
+        v.sort();
+        v
+    };
+    assert_eq!(b_notes, ["only here", "v2"]);
+}
+
+/// If the restored server holds a version that differs and is not older than this device's,
+/// both are kept: the device's content comes back as a separate copy.
+#[test]
+fn accepting_a_server_rollback_keeps_both_when_the_server_has_other_content() {
+    let key = test_key();
+    let mut server = Server::new(&key.vmk_id);
+    let (mut a, id) = one_device_with_item(&key, &mut server);
+    let mut c = Device {
+        state: SyncState::default(),
+        online: true,
+    };
+    sync(&mut c, &key, &mut server, false);
+    let saved = backup(&server);
+    write(&mut a.state, &key, Write::Update(id, &note("from a"))).unwrap();
+    sync(&mut a, &key, &mut server, false); // revision 2 on A
+    restore(&mut server, &saved);
+    // After the restore, another device edits the same item (revision 2 with other content).
+    write(&mut c.state, &key, Write::Update(id, &note("from c"))).unwrap();
+    sync(&mut c, &key, &mut server, false);
+
+    sync(&mut a, &key, &mut server, false);
+    // Known limitation (threat model T-9, selfhost.md): C's write reused sequence number 2, which
+    // A had already passed, so no warning is raised and A does not see C's edit. Only a manual
+    // resync (below) repairs this. If the protocol ever detects it, change these two lines.
+    assert!(!a.state.rollback_warning);
+    assert_eq!(
+        read(
+            &key,
+            &effective(&a.state).unwrap().values().next().unwrap().record
+        )
+        .unwrap(),
+        "from a"
+    );
+    accept_server_rollback(&mut a.state); // the manual "resync from the server" action
+    sync(&mut a, &key, &mut server, false);
+    assert_eq!(server_notes(&key, &server), ["from a", "from c"]);
+    assert!(a.state.conflicts.is_empty() && a.state.outbox.is_empty());
+}
+
+/// Two devices that both had an item the restored server lost must end up with ONE item, not a
+/// copy each: it is put back under its old id.
+#[test]
+fn two_devices_recreating_a_lost_item_converge_on_one_copy() {
+    let key = test_key();
+    let mut server = Server::new(&key.vmk_id);
+    let (mut a, _id) = one_device_with_item(&key, &mut server);
+    let saved = backup(&server);
+    write(&mut a.state, &key, Write::Create(&note("lost"))).unwrap();
+    sync(&mut a, &key, &mut server, false);
+    let mut b = Device {
+        state: SyncState::default(),
+        online: true,
+    };
+    sync(&mut b, &key, &mut server, false);
+    restore(&mut server, &saved);
+    for dev in [&mut a, &mut b] {
+        sync(dev, &key, &mut server, false); // detects the rollback
+        accept_server_rollback(&mut dev.state);
+        sync(dev, &key, &mut server, false);
+    }
+    assert_eq!(server_notes(&key, &server), ["lost", "v1"]);
+    for dev in [&a, &b] {
+        assert!(dev.state.conflicts.is_empty() && dev.state.outbox.is_empty());
+    }
+}
+
+/// Accepting twice (or while a resync is running) never drops this device's records.
+#[test]
+fn accepting_twice_keeps_the_snapshot() {
+    let key = test_key();
+    let mut server = Server::new(&key.vmk_id);
+    let (mut a, _id) = one_device_with_item(&key, &mut server);
+    let saved = backup(&server);
+    write(&mut a.state, &key, Write::Create(&note("only here"))).unwrap();
+    sync(&mut a, &key, &mut server, false);
+    restore(&mut server, &saved);
+    sync(&mut a, &key, &mut server, false);
+    accept_server_rollback(&mut a.state);
+    accept_server_rollback(&mut a.state); // records are cleared by the first call
+    sync(&mut a, &key, &mut server, false);
+    assert_eq!(server_notes(&key, &server), ["only here", "v1"]);
+}
+
 #[test]
 fn resync_after_tombstone_purge_keeps_local_edits_as_conflicts() {
     let key = test_key();

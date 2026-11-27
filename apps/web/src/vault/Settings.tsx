@@ -253,9 +253,9 @@ function ActivityTab() {
     <div className={s.section}>
       {sync?.rollback === true && (
         <Banner tone="danger">
-          The server returned older data than this device has seen, so syncing is paused. If you trust the server again,
-          <Button variant="ghost" onClick={() => void call("clearRollback", undefined)}>
-            resume syncing
+          The server returned older data than this device has seen, so syncing is paused. This happens when the server was restored from an older backup. If you trust the server again,
+          <Button variant="ghost" onClick={() => void call("resyncFromServer", undefined)}>
+            accept its data and resync
           </Button>
         </Banner>
       )}
@@ -346,6 +346,23 @@ function BackupTab() {
       </p>
       <div>
         <Button onClick={() => void download()}>Export encrypted copy</Button>
+      </div>
+      <div style={{ display: "grid", gap: "var(--space-2)" }}>
+        <h2 style={{ margin: 0, fontSize: "var(--text-ml)" }}>After a server restore</h2>
+        <p className={s.meta} style={{ margin: 0 }}>
+          If the server was restored from an older backup, this device can miss changes. Resyncing pulls everything from the server again and sends back anything newer that only this device has.
+        </p>
+        <div>
+          <Button
+            onClick={() => {
+              void call("resyncFromServer", undefined)
+                .then(() => toast("Resynced with the server.", "ok"))
+                .catch((e: unknown) => toast(errorText(e), "error"));
+            }}
+          >
+            Resync from the server
+          </Button>
+        </div>
       </div>
       <form onSubmit={restore} style={{ display: "grid", gap: "var(--space-3)" }} aria-label="Restore from an export">
         <h2 style={{ margin: 0, fontSize: "var(--text-ml)" }}>Restore from an export</h2>

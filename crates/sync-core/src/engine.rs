@@ -79,6 +79,8 @@ pub struct Effective {
 pub enum Write<'a> {
     /// New item.
     Create(&'a Item),
+    /// An item the server lost (after a restore), put back under its old id (sync.md §7.1).
+    Recreate(ItemId, &'a Item),
     /// New version of an item (also restores a deleted item).
     Update(ItemId, &'a Item),
     /// Delete an item.
@@ -197,8 +199,12 @@ pub fn effective(state: &SyncState) -> Result<BTreeMap<String, Effective>> {
 /// Applies a local change: seals it and queues it in the outbox following sync.md §4.
 pub fn write(state: &mut SyncState, key: &VaultKey, change: Write<'_>) -> Result<WriteOutcome> {
     let mutation_id = random_id()?;
-    if let Write::Create(item) = change {
-        let (rec, _) = record::seal_new(key, item)?;
+    let created = match change {
+        Write::Create(item) => Some(record::seal_new(key, item)?),
+        Write::Recreate(id, item) => Some(record::seal_new_with_id(key, id, item)?),
+        _ => None,
+    };
+    if let Some((rec, _)) = created {
         state.outbox.push(Pending {
             mutation: mutation_from_record(&rec, 0, mutation_id.clone()),
             sent: false,
@@ -213,7 +219,7 @@ pub fn write(state: &mut SyncState, key: &VaultKey, change: Write<'_>) -> Result
     let (item_id, item) = match change {
         Write::Update(id, item) => (id, Some(item)),
         Write::Delete(id) => (id, None),
-        Write::Create(_) => unreachable!(),
+        Write::Create(_) | Write::Recreate(..) => unreachable!(),
     };
     let k = key_of(&item_id);
     if state.conflicts.contains_key(&k) {
@@ -412,7 +418,7 @@ pub fn apply_changes(
     state.highest_vault_seq = state.highest_vault_seq.max(resp.vault_seq);
     state.keyset_version = state.keyset_version.max(resp.keyset_version);
     if report.done && state.resyncing {
-        finish_resync(state);
+        finish_resync(state, key);
     }
     Ok(PullOutcome::Applied(report))
 }
@@ -424,7 +430,7 @@ pub fn begin_resync(state: &mut SyncState) {
     state.records.clear();
 }
 
-fn finish_resync(state: &mut SyncState) {
+fn finish_resync(state: &mut SyncState, key: &VaultKey) {
     state.resyncing = false;
     let missing: Vec<String> = state
         .outbox
@@ -452,6 +458,90 @@ fn finish_resync(state: &mut SyncState) {
                     reason: ConflictReason::DeletedElsewhere,
                 },
             );
+        }
+    }
+    reoffer_after_rollback(state, key);
+}
+
+/// The user chose to accept the server's data after a "server returned older data" warning
+/// (sync.md §7.1), for example after the operator restored an older backup.
+///
+/// Forgets the highest sequence number and revisions seen, clears the warning, and starts a full
+/// resync. This device's own records are kept (ciphertext only) so that, once the pull is done,
+/// content that is newer than the server's is offered again instead of being lost.
+pub fn accept_server_rollback(state: &mut SyncState) {
+    // Merge into any earlier snapshot so that accepting twice never drops records.
+    let mut by_item: BTreeMap<String, WireRecord> = state
+        .rollback_snapshot
+        .drain(..)
+        .map(|r| (b64::encode(&r.item_id.0), r))
+        .collect();
+    for (k, r) in &state.records {
+        let newer = by_item.get(k).is_none_or(|old| r.revision > old.revision);
+        if newer {
+            by_item.insert(k.clone(), r.clone());
+        }
+    }
+    state.rollback_snapshot = by_item.into_values().collect();
+    state.rollback_warning = false;
+    state.highest_vault_seq = 0;
+    state.keyset_version = 0;
+    state.known_revisions.clear();
+    begin_resync(state);
+}
+
+/// After the full pull that follows [`accept_server_rollback`]: compares each record this device
+/// had with what the server now holds, and queues what would otherwise be lost.
+/// - only on this device: created again under its old id, so devices that all do this agree on
+///   one item;
+/// - on the server at an older revision with different content: this device's content is put
+///   back on top of it (the normal push and conflict rules apply if another device did the same);
+/// - on the server at the same or a newer revision with different content: kept as a separate
+///   copy, so nothing from either side is lost;
+/// - deleted here: left as the server has it.
+///
+/// Items that already have pending edits or an open conflict are left to those mechanisms.
+fn reoffer_after_rollback(state: &mut SyncState, key: &VaultKey) {
+    for old in std::mem::take(&mut state.rollback_snapshot) {
+        let k = b64::encode(&old.item_id.0);
+        let handled = state.conflicts.contains_key(&k)
+            || state
+                .outbox
+                .iter()
+                .any(|p| b64::encode(&p.mutation.item_id.0) == k);
+        if handled {
+            continue;
+        }
+        let Ok(old_rec) = record_from_wire(&old) else {
+            continue;
+        };
+        let Some(item) = record::open(key, &old_rec).ok().and_then(|o| o.item) else {
+            continue; // deleted here, or not readable: nothing to offer
+        };
+        let server_item = state.records.get(&k).map(|s| {
+            record_from_wire(s)
+                .and_then(|r| record::open(key, &r))
+                .ok()
+                .and_then(|o| o.item)
+        });
+        match server_item {
+            None => {
+                let _ = write(state, key, Write::Recreate(old_rec.item_id, &item));
+            }
+            Some(Some(s)) if s == item => {}
+            Some(_)
+                if state
+                    .records
+                    .get(&k)
+                    .is_some_and(|s| old.revision > s.revision) =>
+            {
+                let _ = write(state, key, Write::Update(old_rec.item_id, &item));
+            }
+            Some(_) => {
+                let mut copy = item.clone();
+                copy.title = format!("{} (this device's copy)", item.title);
+                let _ = write(state, key, Write::Create(&copy));
+            }
         }
     }
 }

@@ -88,16 +88,28 @@ docker run --rm -v urkey_urkey-data:/data -v "$PWD":/backup busybox:1.37.0 sh -c
 docker compose start api
 ```
 
-**After restoring an older backup, devices that synced later see "The server returned older
-data than this device has seen" and stop syncing.** This is the rollback protection (threat
-model T-9) doing its job. Their local copies still hold the newer items. Today, "resume
-syncing" does not clear this state: it only hides the warning until the next pull (PROGRESS
-O-14). To bring a device back:
-1. On that device, make an encrypted export (web: Settings › Backup; CLI: `urk export`).
-2. Remove urkey from the device (web: Settings › About; CLI: `urk forget --yes`).
-3. Sign in again with the Secret Key and master password.
-4. Restore the export. Items newer than the backup come back as new items, so you may want to
-   delete duplicates.
+**After restoring an older backup, every device must resync.** Devices that synced after the
+backup see "The server returned older data than this device has seen" and stop syncing. That is
+the rollback protection (threat model T-9) working. Other devices may see **no warning at all**
+if enough new activity has raised the server's counter back, and then they silently miss changes
+(zero-knowledge review N-1). So after any restore, on **each** device:
+- web: Settings › Backup › **Resync from the server** (or "accept its data and resync" in the
+  warning);
+- CLI: `urk sync --resync`.
+
+**Devices that joined after the backup are unknown to the restored server** and are refused
+(“The server refused the sign-in”). The CLI keeps its local data: run `urk login` again (it
+registers the device), then `urk sync --resync`. The web app has no re-register step yet
+(review N-2): it keeps working offline, but to sync again it must sign in anew, which starts from
+an empty local copy. So **first export** (Settings › Backup › Export encrypted copy), then
+Settings › About › “Sign out and remove data from this device”, sign in, and restore the
+export. Items come back as new items.
+
+Resyncing pulls everything again and sends back anything newer that only that device has: items the
+backup lost, and edits newer than the backup's versions. Where the restored server holds
+different content at the same or a newer revision, both are kept (the device's version appears as
+"… (this device's copy)"). Nothing is deleted. Details: sync.md §7.1. The whole procedure is
+tested by `tests/integration/selfhost_restore.sh`.
 
 The `urkey-data` volume holds:
 - the database, which contains only ciphertext, public keys and metadata;

@@ -99,7 +99,7 @@ Status: **M** = mitigated by design, **P** = partly mitigated, **A** = accepted 
 | T-6 | Server forges a deletion | AD-3 | Tombstones are authenticated with the item DEK | M |
 | T-7 | Server deletes data or refuses service | AD-3 | Local offline cache on every device; encrypted export | P (availability not guaranteed) |
 | T-8 | Server injects a fake item | AD-3 | Server lacks the VMK, so it cannot produce a valid DEK wrap; fails to decrypt | M |
-| T-9 | Server rolls back the vault or hides recent changes (fork) | AD-3 | Per-item revision in AAD; clients remember the highest revision and `vault_seq` seen and alert on decrease | P — a client that has never seen the newer state cannot detect withholding |
+| T-9 | Server rolls back the vault or hides recent changes (fork) | AD-3 | Per-item revision in AAD; clients remember the highest revision and `vault_seq` seen and alert on decrease | P — a client that has never seen the newer state cannot detect withholding Accepting the server's data after a warning re-offers what the device had instead of dropping it (sync.md §7.1). A rollback that the sequence numbers do not reveal (other devices wrote until `vault_seq` caught up) is not detected; a manual resync repairs it. |
 | T-10 | Stolen session token used to change keys or revoke devices | AD-1/AD-7 | Step-up signatures by `auth_sk` for sensitive operations; short-lived tokens; hashed at rest | M |
 | T-11 | Locked stolen device: brute-force the cached envelope | AD-6 | Attacker has ASK from the device, so security = Argon2id cost × password strength; strength warning; user revokes device and rotates | P |
 | T-12 | Emergency Kit stolen | AD-11 | RK alone recovers the vault. Recovery triggers a notice on all devices and revokes them, so the owner notices; rotation replaces RK. Optional recovery delay (Q-3) would stop online abuse but not an attacker who also has a database copy | **A/P** |
@@ -107,7 +107,7 @@ Status: **M** = mitigated by design, **P** = partly mitigated, **A** = accepted 
 | T-14 | Revoked device keeps reading the vault | AD-8 | Revocation blocks sync; **VMK rotation** makes later items unreadable to it. Data it already had stays exposed | P |
 | T-15 | Malicious dependency | AD-5 | Minimal deps; lockfiles; `cargo deny`, `pnpm audit`; review new deps in an ADR; pinned toolchain | P |
 | T-16 | Phishing site collects password | AD-9 | Installed PWA on a fixed origin; ASK is stored on enrolled devices so users rarely type it — a request to type it is a warning sign (UX copy says so); login signatures bind `api_origin` | P |
-| T-17 | Online guessing / account enumeration | AD-12 | Login needs a signature from `auth_sk` (needs ASK); fake prelogin responses; rate limiting on auth and recovery endpoints | M |
+| T-17 | Online guessing / account enumeration | AD-12 | Login needs a signature from `auth_sk` (needs ASK); fake prelogin responses; rate limiting on auth and recovery endpoints | M **Accepted exception (M-1, owner, 2026-11-27):** `POST /v1/accounts` answers `409 email_taken`, so an attacker can learn that an email has an account (10 attempts per hour per IP). No vault data is exposed. Email verification would close it; it is not planned. |
 | T-18 | Other local user uses the SSH agent | AD-10 | Socket in a 0700 directory, mode 0600, peer-uid check; keys only while unlocked | M |
 | T-19 | SSH agent forwarding abused by a remote host | AD-3-like remote | Documentation: do not forward the agent to untrusted hosts; per-use confirmation in v1.1 | A (v1) |
 | T-20 | Secrets leak through logs, errors, URLs, crash reports | all | No secrets in logs (secret types have no `Debug`, enforced at compile time), uniform errors, no analytics, canary-secret test in CI | M |
@@ -183,6 +183,7 @@ These must always hold; each has (or will have) a test.
 4. **T-14** — data already on a revoked device stays exposed.
 5. **T-11 / T-22** — a stolen device's protection rests on the master password.
 6. **T-28** — an export file can lose whole records without detection.
+7. **T-17 / M-1** — account creation reveals whether an email is registered.
 
 ## 11. Review triggers
 
