@@ -9,14 +9,43 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 
 | | |
 |--|--|
-| Last updated | 2026-11-26 |
-| Current phase | **P2–P7 engineering complete.** Every phase gate still needs owner-only steps (below). |
+| Last updated | 2026-11-27 |
+| Current phase | **P2–P7 engineering complete.** Every phase gate still needs owner-only steps (below). The native macOS/iOS app (V1.1) is **not started**: see the handoff in "Resume here". |
 | Branch | `claude/youthful-archimedes-v6dhz1` (no PR yet) |
-| CI | 2 jobs: Linux (`scripts/dev.sh check`, everything incl. e2e) and macOS (CLI + agent). |
+| CI | 2 jobs: Linux (`scripts/dev.sh check`, everything incl. e2e) and macOS (CLI + agent). Latest: [run 30](https://github.com/hungdohuy/urkey/actions/runs/45969566215) on `87269ab`, both green. |
+| Run it | `scripts/dev.sh dev` (local), or `docker compose up -d --build` (self-hosted, ADR 0018). |
 | V1 requirements | 45 of 48 done, 2 partly done (R-SSH-2 needs a real Mac, R-SEC-13 needs deployment), 1 open (R-SSH-5, V1.1) |
 | Data | **Test data only** until M2. Nothing is deployed. |
 
 ## Resume here (next steps, in order)
+
+**Handoff to the macOS/iOS session (owner: Mac with Remote Control).** The web app, the Rust core,
+the CLI + SSH agent and the API are done and green. Nothing native is built yet.
+1. **Owner, first:** update the phase section of `CLAUDE.md` (O-11). It still says P2–P7, and
+   `CLAUDE.md` limits work to the current phase. Suggested text: "Current phase: V1.1 — native
+   macOS and iOS apps (owner directive, <date>). P2–P7 engineering is complete; owner-only gates
+   stay in `PROGRESS.md`. Touch ID unlock changes the key hierarchy: it is a spec change and needs
+   owner approval before code."
+2. **On the Mac:** Xcode (the full app, not only the command line tools), `rustup` (the pinned
+   toolchain installs itself), Node 22.23+, pnpm, then `scripts/dev.sh doctor` and
+   `scripts/dev.sh setup`. Add the Apple targets: `rustup target add aarch64-apple-darwin
+   aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-darwin`.
+3. **Run the Mac part of the manual checklist** (`docs/operations/manual-test.md` §5): it closes
+   O-6 (Keychain prompts, `urk agent install`/launchd, `ssh`/`git` through the agent, `urk item copy`).
+4. **Suggested native plan** (the first four bullets need no Apple account and can start right away; the last needs the owner):
+   - ADRs: how the Rust core is packaged for Swift (UniFFI), SwiftUI app structure, Secret Key in
+     Keychain/Secure Enclave, Touch ID unlock, the iOS AutoFill extension, per-use SSH signing
+     confirmation (R-SSH-5).
+   - Move the logic now in `wasm-bindings` into a platform-neutral crate used by web and native.
+   - A Swift-facing crate with the same handle-based API (no raw keys), plus generated bindings.
+   - A Swift package and Xcode project skeleton with tests; CI builds the Apple targets and runs
+     `xcodebuild test` on the macOS runner.
+   - Needs the Mac/owner: signing and entitlements (Apple Developer account), Touch ID/Secure
+     Enclave, device testing, TestFlight.
+   Rules that carry over: no secrets in logs, no `Debug` on secret types (`assert_not_debug!`),
+   test data only until M2, nothing deployed without the owner.
+
+**Still open from this phase:**
 
 1. **Owner:** review and decide the items in [Waiting on the owner](#waiting-on-the-owner),
    starting with the code review (O-3).
@@ -152,6 +181,8 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 
 Newest first. One short entry per session: what changed, where it stopped.
 
+- **2026-11-27 (i)** — Wrap-up: everything pushed, CI green (run 30). Added the handoff for the macOS/iOS session at the top of
+  "Resume here". Nothing native is built yet; `CLAUDE.md`'s phase section is still P2–P7 (O-11).
 - **2026-11-27 (h)** — Fixed N-2: a web device the restored server does not know can sign in again without losing its local
   data (banner, `Core::prepare_relogin`, then the O-14 resync). Browser test `reregister.spec.ts` plus a component test. N-1 remains (O-15).
 
