@@ -20,6 +20,8 @@ export interface SyncStatus {
   unread_events: number;
   state: "synced" | "syncing" | "offline" | "error" | "update_required";
   lastSyncAt: number | null;
+  /** The server does not recognise this device (it was restored from an older backup). */
+  unknownDevice?: boolean;
 }
 
 export interface ItemSummary {
@@ -106,6 +108,7 @@ export interface Methods {
   events: { params: undefined; result: SecurityEvent[] };
   ackEvent: { params: { seq: number }; result: null };
   resyncFromServer: { params: undefined; result: SyncStatus };
+  reregisterDevice: { params: undefined; result: SyncStatus };
   account: { params: undefined; result: { account: Record<string, unknown>; devices: DeviceRecord[]; thisDevice: string } };
   changePassword: { params: { newPassword: string }; result: null };
   // `confirmed: false`: the server could not be reached to confirm the change (R-REC-3). The new

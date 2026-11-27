@@ -2,11 +2,14 @@
 import { CoreError, type CoreClient } from "./core/client";
 import type { AppState, ItemBody, ItemSummary, Methods, Notice } from "./core/protocol";
 
-export function fakeClient(initial: Partial<AppState> = {}): CoreClient & { items: Map<string, ItemBody> } {
+export function fakeClient(initial: Partial<AppState> = {}, opts: { unknownDevice?: boolean } = {}): CoreClient & { items: Map<string, ItemBody>; reregistered: () => number } {
   let state: AppState = { phase: "welcome", email: null, deviceName: null, apiOrigin: "http://api.test", lockReason: null, ...initial };
   const listeners = new Set<(n: Notice) => void>();
   const items = new Map<string, ItemBody>();
   let n = 0;
+  let unknownDevice = opts.unknownDevice === true;
+  const statusNow = () => ({ pending: 0, conflicts: 0, quarantined: 0, failed: 0, rollback: false, unread_events: 0, state: unknownDevice ? ("error" as const) : ("synced" as const), lastSyncAt: null, unknownDevice });
+  let reregisterCalls = 0;
   const emit = (x: Notice) => listeners.forEach((l) => l(x));
   const set = (p: Partial<AppState>) => {
     state = { ...state, ...p };
@@ -56,13 +59,21 @@ export function fakeClient(initial: Partial<AppState> = {}): CoreClient & { item
       emit({ notice: "items_changed" });
       return key;
     },
-    status: () => ({ pending: 0, conflicts: 0, quarantined: 0, failed: 0, rollback: false, unread_events: 0, state: "synced", lastSyncAt: null }),
-    sync: () => ({ pending: 0, conflicts: 0, quarantined: 0, failed: 0, rollback: false, unread_events: 0, state: "synced", lastSyncAt: null }),
+    status: () => statusNow(),
+    sync: () => statusNow(),
+    reregisterDevice: () => {
+      reregisterCalls += 1;
+      unknownDevice = false;
+      const st = statusNow();
+      emit({ notice: "sync", status: st }); // the real worker pushes status the same way
+      return st;
+    },
     generatePassword: () => ({ value: "Gen3rated-Passw0rd!", bits: 120 }),
     generatePassphrase: () => ({ value: "alpha-bravo-charlie-delta", bits: 51 }),
   };
   return {
     items,
+    reregistered: () => reregisterCalls,
     call(method, params) {
       const h = handlers[method] as ((p: unknown) => unknown) | undefined;
       if (h === undefined) return Promise.reject(new CoreError("unsupported"));
@@ -74,6 +85,7 @@ export function fakeClient(initial: Partial<AppState> = {}): CoreClient & { item
     },
     subscribe(fn) {
       listeners.add(fn);
+      if (unknownDevice) queueMicrotask(() => fn({ notice: "sync", status: statusNow() }));
       return () => listeners.delete(fn);
     },
   };

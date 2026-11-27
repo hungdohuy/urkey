@@ -79,6 +79,22 @@ describe("vault", () => {
     await waitFor(() => expect([...client.items.values()].some((i) => i.title === "New site" && i.fields["password"] === "Gen3rated-Passw0rd!")).toBe(true));
   });
 
+  it("offers to sign an unknown device in again, then drops the notice (review N-2)", async () => {
+    const client = fakeClient({ phase: "unlocked", email: "a@example.test" }, { unknownDevice: true });
+    render(<App client={client} />);
+    expect(await screen.findByText(/doesn.t recognise this device/)).toBeInTheDocument();
+    expect(screen.getByText(/Your data on this device is kept/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sign this device in again" }));
+    await waitFor(() => expect(client.reregistered()).toBe(1));
+    await waitFor(() => expect(screen.queryByText(/doesn.t recognise this device/)).not.toBeInTheDocument());
+    expect(await screen.findByText(/signed in again/)).toBeInTheDocument();
+  });
+
+  it("shows no device notice when the server knows the device", async () => {
+    await unlockedWithLogin();
+    expect(screen.queryByText(/doesn.t recognise this device/)).not.toBeInTheDocument();
+  });
+
   it("keeps the document title generic", async () => {
     await unlockedWithLogin();
     expect(document.title).toBe("urkey");

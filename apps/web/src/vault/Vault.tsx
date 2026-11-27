@@ -2,7 +2,7 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowLeft, CircleAlert, CloudOff, FileText, Folder, KeyRound, Lock, Plus, RefreshCw, Settings as Cog, ShieldCheck, SquareTerminal, Star, Tag, TriangleAlert, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useApp } from "../app/context";
+import { errorText, useApp } from "../app/context";
 import type { ItemSummary } from "../core/protocol";
 import { Banner, Button, EmptyState, IconButton, Modal, TypeTile, css } from "../ui/kit";
 import { Attention } from "./Attention";
@@ -68,10 +68,26 @@ function SyncIndicator() {
 }
 
 function Notices({ onOpen }: { onOpen: () => void }) {
-  const { sync } = useApp();
-  if ((sync?.unread_events ?? 0) === 0 && sync?.rollback !== true && (sync?.quarantined ?? 0) === 0) return null;
+  const { sync, call, toast } = useApp();
+  const [busy, setBusy] = useState(false);
+  if ((sync?.unread_events ?? 0) === 0 && sync?.rollback !== true && (sync?.quarantined ?? 0) === 0 && sync?.unknownDevice !== true) return null;
+  const reregister = () => {
+    setBusy(true);
+    void call("reregisterDevice", undefined)
+      .then(() => toast("This device is signed in again. Your data on it was kept.", "ok"))
+      .catch((e: unknown) => toast(errorText(e), "error"))
+      .finally(() => setBusy(false));
+  };
   return (
     <div style={{ padding: "var(--space-2) var(--space-3) 0" }}>
+      {sync?.unknownDevice === true && (
+        <Banner tone="warn">
+          <span>The server doesn&apos;t recognise this device. This happens when the server was restored from an older backup. Your data on this device is kept.</span>
+          <Button variant="ghost" disabled={busy} onClick={reregister}>
+            {busy ? "Signing in…" : "Sign this device in again"}
+          </Button>
+        </Banner>
+      )}
       {sync?.rollback === true && <Banner tone="danger">The server returned older data than this device has seen. Syncing is paused.</Banner>}
       {(sync?.quarantined ?? 0) > 0 && <Banner tone="danger">Some changes from the server failed integrity checks and were not applied.</Banner>}
       {(sync?.unread_events ?? 0) > 0 && (

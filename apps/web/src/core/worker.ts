@@ -144,17 +144,26 @@ async function api<T>(path: string, body?: unknown, auth: "full" | "recovery" | 
   throw new ApiError(res.status, code);
 }
 
+/** The server answered `unauthorized` to this device's refresh: it does not know the device (review N-2). */
+let deviceUnknown = false;
+
 async function ensureSession(): Promise<void> {
   if (token !== null || config === null) return;
   const ch = await api<{ challenge_id: string; nonce: string }>("/v1/auth/challenge", { account_id: config.accountId, purpose: "refresh" }, "none");
   const message = Core.refresh_message(config.accountId, ch.nonce, config.deviceId);
   const sig = await signWithDevice(message);
-  const s = await api<{ session_token: string }>(
-    "/v1/auth/refresh",
-    { account_id: config.accountId, device_id: config.deviceId, challenge_id: ch.challenge_id, sig_device: sig },
-    "none",
-  );
-  token = s.session_token;
+  try {
+    const s = await api<{ session_token: string }>(
+      "/v1/auth/refresh",
+      { account_id: config.accountId, device_id: config.deviceId, challenge_id: ch.challenge_id, sig_device: sig },
+      "none",
+    );
+    token = s.session_token;
+    deviceUnknown = false;
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401 && e.code === "unauthorized") deviceUnknown = true;
+    throw e;
+  }
 }
 
 async function stepup(path: string, operation: string, payloadJson: string): Promise<{ account: Record<string, unknown> }> {
@@ -219,9 +228,9 @@ async function saveSync(): Promise<void> {
 async function refreshStatus(patch: Partial<SyncStatus> = {}): Promise<SyncStatus> {
   if (core !== null) {
     try {
-      syncStatus = { ...syncStatus, ...(JSON.parse(core.status()) as Partial<SyncStatus>), ...patch };
+      syncStatus = { ...syncStatus, ...(JSON.parse(core.status()) as Partial<SyncStatus>), unknownDevice: deviceUnknown, ...patch };
     } catch {
-      syncStatus = { ...syncStatus, ...patch };
+      syncStatus = { ...syncStatus, unknownDevice: deviceUnknown, ...patch };
     }
   }
   notify({ notice: "sync", status: syncStatus });
@@ -496,6 +505,29 @@ const handlers: { [M in Method]: (p: Methods[M]["params"]) => Promise<Methods[M]
     await saveSync();
     await refreshStatus();
     return null;
+  },
+
+  /**
+   * The server does not know this device (it was restored from an older backup; review N-2). Sign
+   * in again with this device's own key and the unlocked session's account key, keep all local
+   * data, then accept the server's data and resync so newer local content is offered again
+   * (sync.md §7.1).
+   */
+  async reregisterDevice() {
+    const c = need();
+    if (config === null) throw new ApiError(0, "no_account");
+    const pre = await api<Record<string, string>>("/v1/auth/prelogin", { email: config.email }, "none");
+    const ch = await api<{ challenge_id: string; nonce: string }>("/v1/auth/challenge", { account_id: config.accountId, purpose: "login" }, "none");
+    const prep = JSON.parse(
+      c.prepare_relogin(JSON.stringify(pre), ch.challenge_id, ch.nonce, JSON.stringify(await deviceInfo(config.deviceName, config.deviceId)), API),
+    ) as { request: Record<string, unknown>; message: string };
+    const sig = await signWithDevice(decode(prep.message));
+    const s = await api<{ session_token: string }>("/v1/auth/login", { ...prep.request, sig_device: sig }, "none");
+    token = s.session_token;
+    deviceUnknown = false;
+    c.accept_server_rollback();
+    await saveSync();
+    return syncNow();
   },
 
   /** Accept the server's data and pull everything again (sync.md §7.1); newer local content is offered again. */

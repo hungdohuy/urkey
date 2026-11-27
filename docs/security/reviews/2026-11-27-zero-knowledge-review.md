@@ -147,9 +147,16 @@ same user could read the token. That's the same impact as M-2, limited to that d
   self-hosting guide tells operators to run it on every device after a restore. A
   protocol-level fix, such as a per-account epoch in the change feed that a restore cannot
   reproduce, needs an API and sync-spec change; left for the owner (PROGRESS O-15).
-- **N-2 (low, found while testing): the web app cannot re-register a device after a restore.**
+- **N-2 (low, found while testing): the web app cannot re-register a device after a restore. — fixed 2026-11-27.**
   A device enrolled after the backup is unknown to the restored server, so refresh fails with
   `unauthorized`. The CLI recovers with `urk login` (local data is kept). The web app's only
   path is to sign out (which wipes local data) and sign in anew, so a user must export first or
   newer items that only that device had can be lost. Mitigated by the self-hosting guide; a
   "sign this device in again, keeping local data" flow would remove the risk (PROGRESS O-15).
+  **Fix:** when a device's refresh is answered `unauthorized`, the web app shows "The server
+  doesn't recognise this device" with **Sign this device in again**. That signs a login with the
+  device's own key and the unlocked session's account key (`Core::prepare_relogin`; the account
+  id from the server must match the local one), keeps all local data, and then accepts the
+  server's data and resyncs (sync.md §7.1). Tests: `e2e/reregister.spec.ts` (the server
+  forgets the device, items and counter; a fresh device then sees the note once) and a component
+  test.

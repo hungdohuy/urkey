@@ -22,7 +22,7 @@ export default defineConfig({
     permissions: ["clipboard-read", "clipboard-write"],
   },
   projects: [
-    { name: "dev", testMatch: /(vault|canary|fault)\.spec\.ts/, use: { ...devices["Desktop Chrome"], baseURL: external ?? "http://localhost:5173" } },
+    { name: "dev", testMatch: /(vault|canary|fault|reregister)\.spec\.ts/, use: { ...devices["Desktop Chrome"], baseURL: external ?? "http://localhost:5173" } },
     // The production build on the real asset Worker (workerd): CSP, Trusted Types, service worker.
     { name: "production", testMatch: /production\.spec\.ts/, use: { ...devices["Desktop Chrome"], baseURL: external ?? "http://localhost:4173" } },
   ],

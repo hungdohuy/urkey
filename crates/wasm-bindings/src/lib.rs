@@ -891,6 +891,42 @@ impl Core {
 
     // ---------------------------------------------------------------- recovery
 
+    /// Login request for a device the server no longer knows (for example after the server was
+    /// restored from an older backup; review N-2, sync.md §7.1). It is signed with the account
+    /// auth key of the unlocked session, so neither the password nor the Secret Key is needed
+    /// again. JS signs `message` with the device key, then posts `request` plus `sig_device` to
+    /// `/v1/auth/login`. The device keeps its local data.
+    pub fn prepare_relogin(
+        &self,
+        prelogin_json: &str,
+        challenge_id: &str,
+        nonce: &str,
+        device_json: &str,
+        origin: &str,
+    ) -> JsResult<String> {
+        let unlocked = self.unlocked.as_ref().ok_or_else(|| err("locked"))?;
+        let pre: PreloginResponse = from_json(prelogin_json)?;
+        let account_id =
+            AccountId::from_slice(&pre.account_id.0).map_err(|_| err("invalid: account id"))?;
+        // The server must not be able to make us sign a login for another account.
+        if account_id != self.account_id()? {
+            return Err(err("invalid: wrong account"));
+        }
+        let device: DeviceInfo = from_json(device_json)?;
+        let device_id =
+            DeviceId::from_slice(&device.device_id.0).map_err(|_| err("invalid: device id"))?;
+        let device_pk: [u8; 32] = device.device_pk.array().map_err(verr)?;
+        let nonce = arr32(nonce)?;
+        let message = sign::login_message(&account_id, &nonce, &device_id, &device_pk, origin);
+        let request = json!({
+            "account_id": b64::encode(account_id.as_bytes()),
+            "challenge_id": challenge_id,
+            "device": device,
+            "sig_account": b64::encode(&unlocked.auth.sign(&message)),
+        });
+        to_json(&json!({ "request": request, "message": b64::encode(&message) }))
+    }
+
     /// Prepares the recovery login (crypto §7.7). JS signs `message` with the device key.
     pub fn prepare_recovery_login(
         &self,

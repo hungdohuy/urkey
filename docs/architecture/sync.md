@@ -205,6 +205,12 @@ already passed (§5's cursor skips them). Operators who restore a backup should 
 run the resync on every device. A protocol-level fix (a server epoch in the feed) is a possible
 follow-up.
 
+**A device the restored server does not know** (it enrolled after the backup) is refused on
+refresh with `unauthorized`. The client keeps its local data and offers to sign in again with the
+same device key (`POST /v1/auth/login` enrolls any device whose account and device signatures
+verify). The web app does this from the unlocked session, then runs the resync above; the CLI
+needs `urk login` and `urk sync --resync`.
+
 ## 8. Special situations
 
 ### 8.1 Stale device / resync

@@ -97,13 +97,12 @@ if enough new activity has raised the server's counter back, and then they silen
   warning);
 - CLI: `urk sync --resync`.
 
-**Devices that joined after the backup are unknown to the restored server** and are refused
-(“The server refused the sign-in”). The CLI keeps its local data: run `urk login` again (it
-registers the device), then `urk sync --resync`. The web app has no re-register step yet
-(review N-2): it keeps working offline, but to sync again it must sign in anew, which starts from
-an empty local copy. So **first export** (Settings › Backup › Export encrypted copy), then
-Settings › About › “Sign out and remove data from this device”, sign in, and restore the
-export. Items come back as new items.
+**Devices that joined after the backup are unknown to the restored server** and cannot sync
+until they sign in again. Their local data is kept:
+- web: a banner says "The server doesn't recognise this device". Click **Sign this device in
+  again**. It signs in with the device's own key and your unlocked session (no password or Secret
+  Key is typed again), then resyncs as below;
+- CLI: run `urk login` again, then `urk sync --resync`.
 
 Resyncing pulls everything again and sends back anything newer that only that device has: items the
 backup lost, and edits newer than the backup's versions. Where the restored server holds

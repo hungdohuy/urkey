@@ -44,7 +44,7 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 | O-11 | Update the phase section in `CLAUDE.md` (it still says P2–P7) | You own that section | `CLAUDE.md` |
 | O-12 | Check layouts on a real phone and tablet (Playwright covers desktop Chrome) | R-UX-1 | `docs/ux/screens.md` §8 |
 | O-13 | Decide the remaining 2026-11-27 review finding: M-2 (before deploying to Cloudflare, check whether its request logs record the Authorization header; if so turn request logging off). M-1 was accepted on 2026-11-27 (threat model T-17); L-1 and L-2 are fixed | Review follow-up | `docs/security/reviews/2026-11-27-zero-knowledge-review.md` |
-| O-15 | Decide whether to close two restore-related findings at the product level. **N-1:** a rollback is not always detected (other devices' writes can raise `vault_seq` back past what a device saw); proposed: a per-account epoch in the change feed that a restore cannot reproduce. **N-2:** the web app cannot re-register a device after a restore without wiping its local copy (the CLI can: `urk login`); proposed: a “sign this device in again, keeping local data” flow. Today both are documented, with a manual resync and export-first guidance | Review findings N-1, N-2 | zero-knowledge review §7, `docs/operations/selfhost.md`, `docs/architecture/sync.md` §7.1 |
+| O-15 | Decide whether to close the restore finding **N-1** at the protocol level: a rollback is not always detected (other devices' writes can raise `vault_seq` back past what a device saw); proposed: a per-account epoch in the change feed that a restore cannot reproduce. Today: a manual resync (web, CLI) is the documented repair. (N-2, the web app re-registering a device after a restore, is fixed) | Review finding N-1 | zero-knowledge review §7, `docs/operations/selfhost.md`, `docs/architecture/sync.md` §7.1 |
 
 ## Phases
 
@@ -151,6 +151,9 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-27 (h)** — Fixed N-2: a web device the restored server does not know can sign in again without losing its local
+  data (banner, `Core::prepare_relogin`, then the O-14 resync). Browser test `reregister.spec.ts` plus a component test. N-1 remains (O-15).
 
 - **2026-11-27 (g)** — Owner accepted M-1 and decided O-14 as proposed. Implemented "accept the server's data and
   resync" (sync-core, WASM, web button + permanent Settings › Backup button, `urk sync --resync`): the device's own
