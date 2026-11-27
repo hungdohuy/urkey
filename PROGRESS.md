@@ -20,15 +20,18 @@ Legend: ✅ done · 🟡 partly done / in progress · ⬜ not started · ⏸ wai
 
 1. **Owner:** review and decide the items in [Waiting on the owner](#waiting-on-the-owner),
    starting with O-10 (ADR 0017) and O-1/O-2, then the code review (O-3).
-2. **Owner:** deployment (O-8) following `docs/operations/deploy.md`, then M1 (two weeks with
+2. **Owner:** run the manual checklist `docs/operations/manual-test.md` with
+   `./scripts/dev.sh dev` (section 5 on the Mac closes O-6; the phone-width check closes O-12).
+   `setup` and `dev` were confirmed working on the owner's machine on 2026-11-27.
+3. **Owner:** deployment (O-8) following `docs/operations/deploy.md`, then M1 (two weeks with
    test data on two devices plus the CLI).
-3. **Engineering, optional before the review:**
+4. **Engineering, optional before the review:**
    - a full canary test over console output, DOM attributes, URLs and titles (R-SEC-1);
    - a fault-injection test for Recovery Key replacement (P5);
    - a parallel-push stress test against deployed D1 (P4);
    - CLI clipboard copy with clearing after 90 s (R-ITEM-7);
    - R2 snapshots, once Q-5 is decided (O-5).
-4. On each session: run the commands in `CLAUDE.md` and keep this file current.
+5. On each session: run `scripts/dev.sh check` and keep this file current.
 
 ## Waiting on the owner
 
@@ -151,6 +154,10 @@ From `docs/requirements/v1.md`. Evidence is the main test that covers each requi
 ## Session log
 
 Newest first. One short entry per session: what changed, where it stopped.
+
+- **2026-11-27** — The owner ran `scripts/dev.sh setup` and `dev` successfully (web app + CLI);
+  features not yet checked. Fixed the declared Node range (jsdom needs 22.22.2+/24.15+; `.nvmrc`,
+  plus a version check in dev.sh). Added `docs/operations/manual-test.md`. CI green on both jobs.
 
 - **2026-11-26 (c)** — Added `scripts/dev.sh` (local setup/dev/preview/test/e2e/check/cli).
   Fixed the Playwright hang after the last test: `cf dev` runs its server in a new session,
