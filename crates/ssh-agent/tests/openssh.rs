@@ -52,11 +52,12 @@ fn start() -> Fixture {
     Fixture { dir, sock, stop }
 }
 
+/// Unique per test within the process. A timestamp is not enough: macOS's clock ticks in
+/// microseconds, so tests that start together could share one socket path.
 fn rand_suffix() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos() as u64
+    use std::sync::atomic::AtomicU64;
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    NEXT.fetch_add(1, Ordering::Relaxed)
 }
 
 fn keygen(dir: &Path, name: &str, args: &[&str]) -> PathBuf {
